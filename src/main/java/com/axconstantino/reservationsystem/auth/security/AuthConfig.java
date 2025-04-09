@@ -1,4 +1,4 @@
-package com.axconstantino.reservationsystem.config;
+package com.axconstantino.reservationsystem.auth.security;
 
 import com.axconstantino.reservationsystem.common.exception.UserNotFoundException;
 import com.axconstantino.reservationsystem.user.database.model.User;
