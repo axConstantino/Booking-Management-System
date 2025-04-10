@@ -1,6 +1,6 @@
 package com.axconstantino.reservationsystem.auth.security;
 
-import com.axconstantino.reservationsystem.common.exception.UserNotFoundException;
+import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class AuthConfig {
     public UserDetailsService userDetailsService() {
         return username -> {
             final User user = userRepository.findByEmail(username)
-                    .orElseThrow(() -> new UserNotFoundException("User not found"));
+                    .orElseThrow(() -> new NotFoundException("User not found"));
             return org.springframework.security.core.userdetails.User
                     .builder()
                     .username(user.getEmail())

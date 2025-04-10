@@ -3,7 +3,7 @@ package com.axconstantino.reservationsystem.auth.service;
 import com.axconstantino.reservationsystem.auth.dto.AuthRequest;
 import com.axconstantino.reservationsystem.auth.dto.RegisterRequest;
 import com.axconstantino.reservationsystem.auth.dto.TokenResponse;
-import com.axconstantino.reservationsystem.common.exception.UserNotFoundException;
+import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
 import jakarta.validation.constraints.NotNull;
@@ -51,7 +51,7 @@ public class AuthService {
                 )
         );
         final User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new NotFoundException(request.email()));
         final String accessToken = jwtService.generateToken(user);
         final String refreshToken = jwtService.generateRefreshToken(user);
 
@@ -77,7 +77,7 @@ public class AuthService {
         }
 
         final User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         final boolean isTokenValid = jwtService.isTokenValid(refreshToken, user);
 
@@ -95,4 +95,5 @@ public class AuthService {
 
         return new TokenResponse(accessToken, refreshToken);
     }
+
 }
