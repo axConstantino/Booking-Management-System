@@ -1,10 +1,10 @@
 package com.axconstantino.reservationsystem.rooms.database.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomStatus;
+import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomType;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
-
-import java.util.UUID;
 
 @Entity
 @Table(name = "rooms")
@@ -14,10 +14,31 @@ import java.util.UUID;
 @Setter
 @Builder
 public class Room {
-    private UUID id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
     private Double pricePerNight;
+
+    @Column(nullable = false)
+    private Integer capacity;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private RoomType type;
+
+    @Column(nullable = false)
+    @Size(max = 500)
     private String description;
+
+    @Column(nullable = false)
     private String amenities;
-    private Boolean isAvailable;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private RoomStatus status;
 }

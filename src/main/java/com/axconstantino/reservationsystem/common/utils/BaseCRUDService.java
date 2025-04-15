@@ -2,10 +2,13 @@ package com.axconstantino.reservationsystem.common.utils;
 
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class BaseCRUDService<E, D, ID extends Serializable, R extends BaseRepository<E, ID>, M extends BaseMapper<E, D>> {
@@ -13,9 +16,15 @@ public class BaseCRUDService<E, D, ID extends Serializable, R extends BaseReposi
     protected final M mapper;
 
     @Transactional(readOnly = true)
-    public D get(ID id, Class<?> entityClass) {
-        E entity = repository.getExisted(id, entityClass);
-        return mapper.toDto(entity);
+    public Optional<D> get(ID id) {
+        return repository.findById(id)
+                .map(mapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<D> getAll(Pageable pageable) {
+        Page<E> entityPage = repository.findAll(pageable);
+        return entityPage.map(mapper::toDto);
     }
 
     @Transactional(readOnly = true)
@@ -38,3 +47,4 @@ public class BaseCRUDService<E, D, ID extends Serializable, R extends BaseReposi
         repository.deleteById(id);
     }
 }
+

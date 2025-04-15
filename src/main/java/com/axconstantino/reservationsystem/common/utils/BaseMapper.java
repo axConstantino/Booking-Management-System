@@ -1,5 +1,6 @@
 package com.axconstantino.reservationsystem.common.utils;
 
+import org.mapstruct.BeanMapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
@@ -10,9 +11,12 @@ public interface BaseMapper<E, D>{
 
     E toEntity(D dto);
 
+    void updateFromDTO(@MappingTarget E entity, D updateRequest);
+
     default List<D> toDtoList(List<E> entities) {
         return entities.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
+
 }
