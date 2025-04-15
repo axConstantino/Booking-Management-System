@@ -8,6 +8,7 @@ import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +20,7 @@ import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -64,36 +66,64 @@ public class AuthService {
         redisTemplate.delete("refresh:" + user.getId());
     }
 
+    @Transactional
     public TokenResponse refreshToken(@NotNull String authentication) {
-        if (authentication == null || !authentication.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Invalid auth header");
+        try {
+            validateAuthHeader(authentication);
+
+            final String oldRefreshToken = authentication.substring(7);
+            final String userEmail = jwtService.extractUserName(oldRefreshToken);
+
+            final User user = getUserByEmail(userEmail);
+            validateRefreshToken(oldRefreshToken, user);
+
+            return generateNewTokens(user, oldRefreshToken);
+        } catch (SecurityException ex) {
+            log.error("Security exception during refresh token: {}", ex.getMessage());
+            throw ex;
         }
+    }
 
-        final String refreshToken = authentication.substring(7);
-        final String userEmail = jwtService.extractUserName(refreshToken);
-
-        if (userEmail == null) {
-            throw new IllegalArgumentException("Invalid refresh token");
+    private void validateAuthHeader(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new SecurityException("Invalid authentication scheme");
         }
+    }
 
-        final User user = userRepository.findByEmail(userEmail)
+    private User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+    }
 
-        final boolean isTokenValid = jwtService.isTokenValid(refreshToken, user);
+    private void validateRefreshToken(String token, User user) {
+        String storedToken = (String) redisTemplate.opsForValue().get("refresh:" + user.getId());
 
-        if (!isTokenValid) {
-            throw new IllegalArgumentException("Invalid refresh token");
+        if (storedToken == null) {
+            throw new SecurityException("Refresh token not found");
         }
 
-        revokeAllUserTokens(user);
-        final String storedRefreshToken = (String) redisTemplate.opsForValue().get("refresh:" + user.getId());
-        if (!refreshToken.equals(storedRefreshToken)) {
-            throw new IllegalArgumentException("Refresh token not recognized");
+        if (!storedToken.equals(token)) {
+            throw new SecurityException("Token mismatch");
         }
 
-        final String accessToken = jwtService.generateToken(user);
+        if (!jwtService.isTokenValid(token, user)) {
+            throw new SecurityException("Invalid token signature");
+        }
+    }
 
-        return new TokenResponse(accessToken, refreshToken);
+    private TokenResponse generateNewTokens(User user, String oldToken) {
+        redisTemplate.delete("refresh:" + user.getId());
+
+        String newAccessToken = jwtService.generateToken(user);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+
+        redisTemplate.opsForValue().set(
+                "refresh:" + user.getId(),
+                newRefreshToken,
+                Duration.ofDays(7)
+        );
+
+        return new TokenResponse(newAccessToken, newRefreshToken);
     }
 
 }

@@ -7,34 +7,29 @@ import com.axconstantino.reservationsystem.user.database.repository.UserReposito
 import com.axconstantino.reservationsystem.user.dto.UserDTO;
 import com.axconstantino.reservationsystem.user.mapper.UserMapper;
 import com.axconstantino.reservationsystem.validation.PhoneValidator;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserRepository, UserMapper> {
     private final PhoneValidator phoneValidator;
-    private final UserRepository userRepository;
 
     public UserService(UserRepository repository, UserMapper mapper, PhoneValidator phoneValidator) {
         super(repository, mapper);
         this.phoneValidator = phoneValidator;
-        this.userRepository = repository;
     }
 
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
+        return repository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(email));
     }
 
     @Transactional
     public User updateUserBasicInfo(String email, UserDTO updateRequest) {
-        User user = userRepository.findByEmail(email)
+        User user = repository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(email));
 
         mapper.updateFromDTO(user, updateRequest);
@@ -43,7 +38,7 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
             user.setPhone(phoneValidator.formatToE164(updateRequest.getPhone()));
         }
 
-        return userRepository.save(user);
+        return repository.save(user);
     }
 
     public User addPhone(String email, String phone) {

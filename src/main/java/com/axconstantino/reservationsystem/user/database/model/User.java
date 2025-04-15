@@ -2,10 +2,11 @@ package com.axconstantino.reservationsystem.user.database.model;
 
 import com.axconstantino.reservationsystem.user.database.model.enums.Role;
 import com.axconstantino.reservationsystem.validation.ValidPhone;
+import com.axconstantino.reservationsystem.constants.ValidationMessages;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -30,32 +31,35 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotBlank(message = "User name cannot be blank")
-    @Size(min = 3, max = 50, message = "User name must be between 3 and 50 characters")
+    @NotBlank(message = ValidationMessages.USER_NAME_BLANK)
+    @Size(min = 3, max = 50, message = ValidationMessages.USER_NAME_LENGTH)
     @Column(nullable = false, length = 50)
     private String name;
 
-    @NotBlank(message = "Password hash cannot be blank")
+    @NotBlank(message = ValidationMessages.USER_PASSWORD_BLANK)
     @Column(name = "password_hash", nullable = false)
     private String password;
 
-    @NotBlank(message = "Email cannot be blank")
-    @Email(message = "Email should be valid")
+    @NotBlank(message = ValidationMessages.USER_EMAIL_BLANK)
+    @Email(message = ValidationMessages.USER_EMAIL_INVALID)
     @Column(unique = true, nullable = false)
     private String email;
 
-    @ValidPhone
+    @ValidPhone(message = ValidationMessages.USER_PHONE_INVALID)
     private String phone;
 
     @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
     @CollectionTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
-            uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "role"}, name = "uk_user_role")
+            uniqueConstraints = @UniqueConstraint(
+                    columnNames = {"user_id", "role"},
+                    name = "uk_user_role")
     )
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
+    @NotEmpty(message = ValidationMessages.USER_ROLES_EMPTY)
     private Set<Role> roles = new HashSet<>();
 
     @CreationTimestamp
