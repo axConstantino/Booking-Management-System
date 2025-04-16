@@ -9,18 +9,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
-
-@RequestMapping("/rooms")
 @RestController
+@RequestMapping("/rooms")
 @RequiredArgsConstructor
 @Validated
 public class RoomController {
+
     private final RoomService service;
 
     @GetMapping
@@ -36,7 +33,7 @@ public class RoomController {
     }
 
     @GetMapping("/available")
-    public ResponseEntity<Page<RoomDTO>> getAvailableRooms(@Valid RoomFilterRequest filterRequest) {
+    public ResponseEntity<Page<RoomDTO>> searchAvailableRooms(@Valid @ModelAttribute RoomFilterRequest filterRequest) {
         return ResponseEntity.ok(service.getAvailableRooms(filterRequest));
     }
 }

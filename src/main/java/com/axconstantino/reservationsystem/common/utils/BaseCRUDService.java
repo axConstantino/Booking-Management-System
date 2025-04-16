@@ -33,16 +33,16 @@ public class BaseCRUDService<E, D, ID extends Serializable, R extends BaseReposi
     }
 
     @Transactional
-    public D create(D dto, Class<?> entityClass) {
+    public D create(D dto) {
         E entity = mapper.toEntity(dto);
         E createdEntity = repository.save(entity);
         return mapper.toDto(createdEntity);
     }
 
     @Transactional
-    public void delete(ID id, Class<?> entityClass) {
+    public void delete(ID id) {
         if (!repository.existsById(id)) {
-            throw new NotFoundException(entityClass, id);
+            throw new NotFoundException(id);
         }
         repository.deleteById(id);
     }

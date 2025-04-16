@@ -3,6 +3,7 @@ package com.axconstantino.reservationsystem.auth.service;
 import com.axconstantino.reservationsystem.auth.dto.AuthRequest;
 import com.axconstantino.reservationsystem.auth.dto.RegisterRequest;
 import com.axconstantino.reservationsystem.auth.dto.TokenResponse;
+import com.axconstantino.reservationsystem.common.exception.DuplicateEntityException;
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
@@ -30,6 +31,11 @@ public class AuthService {
 
     @Transactional
     public TokenResponse register(final RegisterRequest registerRequest) {
+
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+            throw new DuplicateEntityException("Email ya registrado");
+        }
+
         final User user = User.builder()
                 .name(registerRequest.getName())
                 .email(registerRequest.getEmail())
