@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -56,6 +57,69 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
         return mapper.toDto(savedBooking);
     }
 
+
+    public List<Booking> getUserBookings(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+
+        return repository.findByUser(user);
+    }
+
+    @Transactional
+    public BookingResponse getBookingDetails(UUID bookingId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+
+        Booking booking = repository.findByIdAndUser(bookingId, user)
+                .orElseThrow(() -> new NotFoundException("Booking not found with id: " + bookingId));
+
+        if (!booking.getUser().equals(user)) {
+            throw new NotFoundException("Booking not found for the user");
+        }
+
+        return mapper.toDto(booking);
+    }
+
+    @Transactional
+    public BookingResponse updateBooking(UUID bookingId, BookingRequest updateRequest, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        Booking booking = repository.findByIdAndUser(bookingId, user)
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
+
+        if (booking.getBookingStatus() != BookingStatus.PENDING) {
+            throw new ConflictException("Only reservations in PENDING status can be modified.");
+        }
+
+        Room room = roomRepository.findById(updateRequest.getRoomId())
+                .orElseThrow(() -> new NotFoundException("Room not found"));
+
+        checkRoomAvailability(room, updateRequest.getStartDate(), updateRequest.getEndDate());
+
+        booking.setStartDate(updateRequest.getStartDate());
+        booking.setEndDate(updateRequest.getEndDate());
+        booking.setTotalPrice(calculateTotalPrice(room, updateRequest.getStartDate(), updateRequest.getEndDate()));
+
+        Booking updatedBooking = repository.save(booking);
+        return mapper.toDto(updatedBooking);
+    }
+
+    @Transactional
+    public void cancelBooking(UUID bookingId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        Booking booking = repository.findByIdAndUser(bookingId, user)
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
+
+        if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
+            throw new ConflictException("Booking is already cancelled");
+        }
+
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        repository.save(booking);
+    }
 
     private void checkRoomAvailability(Room room, LocalDateTime startDate, LocalDateTime endDate) {
         boolean isAvailable = repository.findByRoomAndDatesOverlap(room, startDate, endDate).isEmpty();

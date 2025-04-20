@@ -7,6 +7,7 @@ import com.axconstantino.reservationsystem.common.exception.DuplicateEntityExcep
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
+import com.axconstantino.reservationsystem.user.service.UserService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,12 +19,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
     private final JwtService jwtService;
+    private final UserService userService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -43,10 +46,10 @@ public class AuthService {
                 .build();
 
         final User savedUser = userRepository.save(user);
+        userService.sendVerificationEmail(savedUser);
         final String jwtToken = jwtService.generateToken(savedUser);
         final String refreshToken = jwtService.generateRefreshToken(savedUser);
-
-        redisTemplate.opsForValue().set("refresh:" + savedUser.getId(), refreshToken, Duration.ofDays(7));
+        saveRefreshToken(user.getId(), refreshToken);
         return new TokenResponse(jwtToken, refreshToken);
     }
 
@@ -64,8 +67,12 @@ public class AuthService {
         final String refreshToken = jwtService.generateRefreshToken(user);
 
         revokeAllUserTokens(user);
-        redisTemplate.opsForValue().set("refresh:" + user.getId(), refreshToken, Duration.ofDays(7));
+        saveRefreshToken(user.getId(), refreshToken);
         return new TokenResponse(accessToken, refreshToken);
+    }
+
+    private void saveRefreshToken(final UUID id, final String refreshToken) {
+        redisTemplate.opsForValue().set("refresh:" + id, refreshToken, Duration.ofDays(7));
     }
 
     private void revokeAllUserTokens(final User user) {
@@ -123,12 +130,7 @@ public class AuthService {
         String newAccessToken = jwtService.generateToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
 
-        redisTemplate.opsForValue().set(
-                "refresh:" + user.getId(),
-                newRefreshToken,
-                Duration.ofDays(7)
-        );
-
+        saveRefreshToken(user.getId(), newRefreshToken);
         return new TokenResponse(newAccessToken, newRefreshToken);
     }
 

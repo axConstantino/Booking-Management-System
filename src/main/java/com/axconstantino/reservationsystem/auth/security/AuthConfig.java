@@ -12,6 +12,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -38,6 +39,11 @@ public class AuthConfig {
         return username -> {
             final User user = userRepository.findByEmail(username)
                     .orElseThrow(() -> new NotFoundException("User not found"));
+
+            if (!user.getEmailVerified()) {
+                throw new DisabledException("Unverified email");
+            }
+
             return org.springframework.security.core.userdetails.User
                     .builder()
                     .username(user.getEmail())

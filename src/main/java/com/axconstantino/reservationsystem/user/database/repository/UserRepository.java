@@ -10,5 +10,7 @@ import java.util.UUID;
 @Repository
 public interface UserRepository extends BaseRepository<User, UUID> {
     Optional<User> findByEmail(String email);
+    Optional<User> findByEmailVerificationToken(String token);
+    Optional<User> findByResetToken(String token);
     boolean existsByEmail(String email);
 }
