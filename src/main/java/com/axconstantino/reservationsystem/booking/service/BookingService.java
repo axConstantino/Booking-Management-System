@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -129,7 +130,7 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
     }
 
     private double calculateTotalPrice(Room room, LocalDateTime startDate, LocalDateTime endDate) {
-        long nights = Duration.between(startDate, endDate).toDays();
+        long nights = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate());
         return room.getPricePerNight() * nights;
     }
 }

@@ -85,17 +85,4 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/resend-verification")
-    public ResponseEntity<Void> resendVerificationEmail(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userService.getUserByEmail(email);
-
-        if (user.getEmailVerified()) {
-            throw new ConflictException("El email ya está verificado");
-        }
-
-        userService.sendVerificationEmail(user);
-        return ResponseEntity.noContent().build();
-    }
-
 }

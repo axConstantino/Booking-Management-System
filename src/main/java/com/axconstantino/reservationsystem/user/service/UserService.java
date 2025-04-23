@@ -1,6 +1,5 @@
 package com.axconstantino.reservationsystem.user.service;
 
-import com.axconstantino.reservationsystem.common.exception.ConflictException;
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.common.utils.BaseCRUDService;
 import com.axconstantino.reservationsystem.user.database.model.User;
@@ -10,12 +9,9 @@ import com.axconstantino.reservationsystem.user.dto.ResetPasswordRequest;
 import com.axconstantino.reservationsystem.user.dto.UserDTO;
 import com.axconstantino.reservationsystem.user.mapper.UserMapper;
 import com.axconstantino.reservationsystem.validation.PhoneValidator;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,21 +80,6 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
     }
 
     @Transactional
-    public void verifyEmail(String token) {
-        User user = tokenService.validateEmailVerificationToken(token);
-
-        if (user.getEmailVerified()) {
-            throw new ConflictException("The email has already been verified previously");
-        }
-
-        user.setEmailVerified(true);
-        user.setEmailVerificationToken(null);
-        user.setEmailVerificationExpiry(null);
-        repository.save(user);
-        log.info("Email successfully verified for user: {}", user.getEmail());
-    }
-
-    @Transactional
     public void initiatePasswordReset(String email) {
         User user = repository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
@@ -125,31 +106,4 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         repository.save(user);
     }
 
-    public void sendVerificationEmail(User user) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setTo(user.getEmail());
-            helper.setSubject("Verify your email");
-            helper.setText(buildEmailContent(user), true);
-
-            mailSender.send(message);
-        } catch (MessagingException e) {
-            log.error("Error sending verification email to {}", user.getEmail(), e);
-            throw new RuntimeException("Error al enviar email de verificación");
-        }
-    }
-
-    private String buildEmailContent(User user) {
-        return  "<html>"
-                + "<body style='font-family: Arial, sans-serif;'>"
-                + "<h2 style='color: #2c3e50;'>Email Verification</h2>"
-                + "<p>Please click the button below to verify your email:</p>"
-                + "<a href='https://axConstantino.com/verify?token=" + user.getEmailVerificationToken() + "'"
-                + " style='display: inline-block; background-color: #3498db; color: white; padding: 10px 20px;"
-                + " text-decoration: none; border-radius: 5px;'>Verify Email</a>"
-                + "</body></html>";
-
-    }
 }

@@ -51,15 +51,6 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "email_verified")
-    private Boolean emailVerified = false;
-
-    @Column(name = "email_verification_token")
-    private String emailVerificationToken;
-
-    @Column(name = "email_verification_expiry")
-    private LocalDateTime emailVerificationExpiry;
-
     @ValidPhone(message = ValidationMessages.USER_PHONE_INVALID)
     private String phone;
 

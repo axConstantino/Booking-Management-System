@@ -38,25 +38,4 @@ public class TokenService {
         return user.getEmail();
     }
 
-    public String generateEmailVerificationToken(User user) {
-        String tokenValue = UUID.randomUUID().toString();
-        String encodedToken = passwordEncoder.encode(tokenValue);
-
-        user.setEmailVerificationToken(encodedToken);
-        user.setEmailVerificationExpiry(LocalDateTime.now().plusDays(1));
-        repository.save(user);
-
-        return tokenValue;
-    }
-
-    public User validateEmailVerificationToken(String token) {
-        User user = repository.findByEmailVerificationToken(token)
-                .orElseThrow(() -> new SecurityException("Invalid verification token"));
-
-        if (user.getEmailVerificationExpiry().isBefore(LocalDateTime.now())) {
-            throw new SecurityException("Verification token expired");
-        }
-
-        return user;
-    }
 }

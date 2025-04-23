@@ -20,7 +20,7 @@ public interface BookingRepository extends BaseRepository<Booking, UUID> {
 
     Optional<Booking> findByIdAndUser(UUID bookingId, User user);
 
-    @Query("SELECT b FROM Booking b WHERE b.room = :room AND +" +
+    @Query("SELECT b FROM Booking b WHERE b.room = :room AND " +
             "(b.startDate < :endDate AND b.endDate > :startDate)")
     List<Booking> findByRoomAndDatesOverlap(
             @Param("room") Room room,

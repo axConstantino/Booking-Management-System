@@ -6,6 +6,7 @@ import com.axconstantino.reservationsystem.auth.dto.TokenResponse;
 import com.axconstantino.reservationsystem.common.exception.DuplicateEntityException;
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.user.database.model.User;
+import com.axconstantino.reservationsystem.user.database.model.enums.Role;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
 import com.axconstantino.reservationsystem.user.service.UserService;
 import jakarta.validation.constraints.NotNull;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -35,18 +37,14 @@ public class AuthService {
     @Transactional
     public TokenResponse register(final RegisterRequest registerRequest) {
 
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            throw new DuplicateEntityException("Email ya registrado");
-        }
-
         final User user = User.builder()
                 .name(registerRequest.getName())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .roles(Set.of(Role.ROLE_USER))
                 .build();
 
         final User savedUser = userRepository.save(user);
-        userService.sendVerificationEmail(savedUser);
         final String jwtToken = jwtService.generateToken(savedUser);
         final String refreshToken = jwtService.generateRefreshToken(savedUser);
         saveRefreshToken(user.getId(), refreshToken);
