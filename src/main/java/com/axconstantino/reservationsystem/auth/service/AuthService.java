@@ -28,7 +28,6 @@ import java.util.UUID;
 @Slf4j
 public class AuthService {
     private final JwtService jwtService;
-    private final UserService userService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -36,6 +35,10 @@ public class AuthService {
 
     @Transactional
     public TokenResponse register(final RegisterRequest registerRequest) {
+
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+            throw new DuplicateEntityException("Email already exists");
+        }
 
         final User user = User.builder()
                 .name(registerRequest.getName())
@@ -73,7 +76,7 @@ public class AuthService {
         redisTemplate.opsForValue().set("refresh:" + id, refreshToken, Duration.ofDays(7));
     }
 
-    private void revokeAllUserTokens(final User user) {
+    public void revokeAllUserTokens(final User user) {
         redisTemplate.delete("refresh:" + user.getId());
     }
 

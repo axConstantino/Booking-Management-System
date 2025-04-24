@@ -16,7 +16,7 @@ import com.axconstantino.reservationsystem.user.database.repository.UserReposito
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -43,7 +43,7 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
 
         checkRoomAvailability(room, bookingRequest.getStartDate(), bookingRequest.getEndDate());
 
-        double totalPrice = calculateTotalPrice(room, bookingRequest.getStartDate(), bookingRequest.getEndDate());
+        BigDecimal totalPrice = calculateTotalPrice(room, bookingRequest.getStartDate(), bookingRequest.getEndDate());
 
         Booking booking = Booking.builder()
                 .room(room)
@@ -129,8 +129,8 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
         }
     }
 
-    private double calculateTotalPrice(Room room, LocalDateTime startDate, LocalDateTime endDate) {
+    private BigDecimal calculateTotalPrice(Room room, LocalDateTime startDate, LocalDateTime endDate) {
         long nights = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate());
-        return room.getPricePerNight() * nights;
+        return room.getPricePerNight().multiply(BigDecimal.valueOf(nights));
     }
 }

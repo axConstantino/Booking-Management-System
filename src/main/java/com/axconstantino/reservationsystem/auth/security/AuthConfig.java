@@ -40,10 +40,6 @@ public class AuthConfig {
             final User user = userRepository.findByEmail(username)
                     .orElseThrow(() -> new NotFoundException("User not found"));
 
-            if (!user.getEmailVerified()) {
-                throw new DisabledException("Unverified email");
-            }
-
             return org.springframework.security.core.userdetails.User
                     .builder()
                     .username(user.getEmail())

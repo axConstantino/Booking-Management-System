@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +23,9 @@ public class RoomController {
     private final RoomService service;
 
     @GetMapping
-    public ResponseEntity<Page<RoomDTO>> getAllRooms(Pageable pageable) {
+    public ResponseEntity<Page<RoomDTO>> getAllRooms(
+            @PageableDefault(page = 0, size = 10, sort = "name", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
         return ResponseEntity.ok(service.getAll(pageable));
     }
 
@@ -32,7 +36,7 @@ public class RoomController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/available")
+    @GetMapping("/search-available-room")
     public ResponseEntity<Page<RoomDTO>> searchAvailableRooms(@Valid @ModelAttribute RoomFilterRequest filterRequest) {
         return ResponseEntity.ok(service.getAvailableRooms(filterRequest));
     }

@@ -1,8 +1,11 @@
 package com.axconstantino.reservationsystem.user.service;
 
+import com.axconstantino.reservationsystem.auth.service.AuthService;
+import com.axconstantino.reservationsystem.common.exception.DuplicateEntityException;
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.common.utils.BaseCRUDService;
 import com.axconstantino.reservationsystem.user.database.model.User;
+import com.axconstantino.reservationsystem.user.database.model.enums.Role;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
 import com.axconstantino.reservationsystem.user.dto.ChangePasswordRequest;
 import com.axconstantino.reservationsystem.user.dto.ResetPasswordRequest;
@@ -25,13 +28,15 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final JavaMailSender mailSender;
+    private final AuthService authService;
 
-    public UserService(UserRepository repository, UserMapper mapper, PhoneValidator phoneValidator, PasswordEncoder passwordEncoder, TokenService tokenService, JavaMailSender mailSender) {
+    public UserService(UserRepository repository, UserMapper mapper, PhoneValidator phoneValidator, PasswordEncoder passwordEncoder, TokenService tokenService, JavaMailSender mailSender, AuthService authService) {
         super(repository, mapper);
         this.phoneValidator = phoneValidator;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.mailSender = mailSender;
+        this.authService = authService;
     }
 
     @Transactional(readOnly = true)
@@ -52,6 +57,20 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         }
 
         return repository.save(user);
+    }
+
+    @Transactional
+    public void addUserRole(UUID userId, Role newRole) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        if (user.getRoles().contains(newRole)) {
+            throw new DuplicateEntityException("The user already has this role");
+        }
+
+        user.getRoles().add(newRole);
+        authService.revokeAllUserTokens(user);
+        repository.save(user);
     }
 
     @Transactional

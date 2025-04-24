@@ -7,7 +7,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -25,11 +24,6 @@ public class BaseCRUDService<E, D, ID extends Serializable, R extends BaseReposi
     public Page<D> getAll(Pageable pageable) {
         Page<E> entityPage = repository.findAll(pageable);
         return entityPage.map(mapper::toDto);
-    }
-
-    @Transactional(readOnly = true)
-    public List<D> getAll() {
-        return mapper.toDtoList(repository.findAll());
     }
 
     @Transactional

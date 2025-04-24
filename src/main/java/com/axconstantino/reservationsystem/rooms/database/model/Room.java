@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "rooms")
 @AllArgsConstructor
@@ -22,7 +24,7 @@ public class Room {
     private String name;
 
     @Column(nullable = false)
-    private Double pricePerNight;
+    private BigDecimal pricePerNight;
 
     @Column(nullable = false)
     private Integer capacity;

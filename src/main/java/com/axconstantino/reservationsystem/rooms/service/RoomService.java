@@ -1,10 +1,12 @@
 package com.axconstantino.reservationsystem.rooms.service;
 
+import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.common.utils.BaseCRUDService;
 import com.axconstantino.reservationsystem.rooms.database.model.Room;
 import com.axconstantino.reservationsystem.rooms.database.repository.RoomRepository;
 import com.axconstantino.reservationsystem.rooms.dto.RoomDTO;
 import com.axconstantino.reservationsystem.rooms.dto.RoomFilterRequest;
+import com.axconstantino.reservationsystem.rooms.dto.RoomUpdateDTO;
 import com.axconstantino.reservationsystem.rooms.mapper.RoomMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -20,5 +22,13 @@ public class RoomService extends BaseCRUDService<Room, RoomDTO, Long, RoomReposi
 
     public Page<RoomDTO> getAvailableRooms(RoomFilterRequest filterRequest) {
         return roomRepository.findAvailableRooms(filterRequest);
+    }
+
+    public RoomDTO updateRoom(Long roomId, RoomUpdateDTO updateRequest) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new NotFoundException("Room not found with id: " + roomId));
+        mapper.updateEntityFromDto(updateRequest, room);
+        Room updatedRoom = roomRepository.save(room);
+        return mapper.toDto(updatedRoom);
     }
 }
