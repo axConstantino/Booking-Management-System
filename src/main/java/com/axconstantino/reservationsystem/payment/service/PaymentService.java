@@ -26,7 +26,6 @@ public class PaymentService {
     private String appBaseURL;
     private final BookingService bookingService;
 
-
     @PostConstruct
     public void init() {
         Stripe.apiKey = stripeSecretKey;
