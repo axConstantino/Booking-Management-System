@@ -26,9 +26,11 @@ import java.util.UUID;
 public class BookingService extends BaseCRUDService<Booking, BookingResponse, UUID, BookingRepository, BookingMapper> {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
+    private final BookingRepository repository;
 
     public BookingService(BookingRepository repository, BookingMapper mapper, RoomRepository roomRepository, UserRepository userRepository) {
         super(repository, mapper);
+        this.repository = repository;
         this.roomRepository = roomRepository;
         this.userRepository = userRepository;
     }
@@ -58,12 +60,24 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
         return mapper.toDto(savedBooking);
     }
 
+    public Booking findBookingById(UUID bookingId) {
+        return repository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Booking not found with id: " + bookingId));
+    }
 
     public List<Booking> getUserBookings(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
 
         return repository.findByUser(user);
+    }
+
+    public Booking findByIdAndUser(UUID bookingId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+
+        return repository.findByIdAndUser(bookingId, user)
+                .orElseThrow(() -> new NotFoundException("Booking not found with id: " + bookingId));
     }
 
     @Transactional
