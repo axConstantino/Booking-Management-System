@@ -1,0 +1,116 @@
+spring:
+  application:
+    name: Booking-Management-App-Test
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      use-new-id-generator-mappings: true
+  jackson:
+    serialization:
+      INDENT_OUTPUT: true
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:tc:postgresql:16:///testdb?TC_TMPFS=/testtmpfs
+    username: test
+    password: test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 2000
+      initialization-fail-timeout: 0
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+        jdbc:
+          batch_size: 20
+        query:
+          in_clause_parameter_padding: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+      lettuce:
+        shutdown-timeout: 100ms
+
+  mail:
+    host: localhost
+    port: 1025
+    protocol: smtp
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 2000
+          timeout: 2000
+
+  springdoc:
+    swagger-ui:
+      enabled: true
+      try-it-out-enabled: false
+    api-docs:
+      enabled: true
+    info:
+      title: Portfolio API - TEST
+      version: 1.0.0
+      description: API Documentation (Test Environment)
+
+
+  server:
+    port: 0
+    error:
+      include-message: always
+      include-binding-errors: always
+    servlet:
+      context-path: /
+
+app:
+  frontend-url: http://localhost:3000
+  security:
+    jwt:
+      secret: ${TEST_JWT_SECRET}
+      expiration-ms: 3600000
+  stripe:
+    test-mode: true
+    api-key: ${TEST_STRIPE_API_KEY}
+    webhook-secret: ${TEST_STRIPE_WEBHOOK_SECRET}
+
+logging:
+  level:
+    root: INFO
+    org.springframework: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+    org.testcontainers: INFO
+    com.axconstantino.reservationsystem: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+testcontainers:
+  reuse:
+    enabled: true
