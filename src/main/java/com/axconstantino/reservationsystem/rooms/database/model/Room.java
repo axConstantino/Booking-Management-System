@@ -16,6 +16,9 @@ import java.math.BigDecimal;
 @Setter
 @Builder
 public class Room {
+    @Version
+    private Long version;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

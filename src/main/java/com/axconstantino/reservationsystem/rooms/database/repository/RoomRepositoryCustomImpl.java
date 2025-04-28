@@ -2,6 +2,7 @@ package com.axconstantino.reservationsystem.rooms.database.repository;
 
 import com.axconstantino.reservationsystem.booking.database.model.Booking;
 import com.axconstantino.reservationsystem.rooms.database.model.Room;
+import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomStatus;
 import com.axconstantino.reservationsystem.rooms.dto.RoomDTO;
 import com.axconstantino.reservationsystem.rooms.dto.RoomFilterRequest;
 import com.axconstantino.reservationsystem.rooms.mapper.RoomMapper;
@@ -78,8 +79,8 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
         return predicates;
     }
 
-    private void addAvailabilityPredicate(RoomFilterRequest filter, CriteriaBuilder cb,
-                                          Root<Room> room, List<Predicate> predicates) {
+    private void addAvailabilityPredicate(RoomFilterRequest filter, CriteriaBuilder cb, Root<Room> room, List<Predicate> predicates) {
+        predicates.add(cb.equal(room.get("status"), RoomStatus.AVAILABLE));
         if (filter.getStartDate() != null && filter.getEndDate() != null) {
             CriteriaQuery<?> cq = cb.createQuery();
             Subquery<Booking> subquery = cq.subquery(Booking.class);

@@ -17,8 +17,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,7 +40,7 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
 
-        Room room = roomRepository.findById(bookingRequest.getRoomId())
+        Room room = roomRepository.findByIdWithLock(bookingRequest.getRoomId())
                 .orElseThrow(() -> new NotFoundException("Room not found with id: " + bookingRequest.getRoomId()));
 
         checkRoomAvailability(room, bookingRequest.getStartDate(), bookingRequest.getEndDate());
@@ -144,7 +144,8 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
     }
 
     private BigDecimal calculateTotalPrice(Room room, LocalDateTime startDate, LocalDateTime endDate) {
-        long nights = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate());
+        long hours = Duration.between(startDate, endDate).toHours();
+        long nights = (hours + 23) / 24;
         return room.getPricePerNight().multiply(BigDecimal.valueOf(nights));
     }
 }
