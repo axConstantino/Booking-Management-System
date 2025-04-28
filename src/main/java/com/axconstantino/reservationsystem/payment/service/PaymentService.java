@@ -91,7 +91,41 @@ public class PaymentService {
             booking.setBookingStatus(BookingStatus.CONFIRMED);
 
         } else {
-            System.out.println("Booking " + bookingId + " is already in status " + booking.getBookingStatus() + ", no change needed.");
+            log.info("Booking {} is in status {}, no change needed.", bookingId, booking.getBookingStatus());
+        }
+    }
+
+    @Transactional
+    public void markBookingAsPaymentFailed(UUID bookingId) {
+        Booking booking = bookingService.findBookingById(bookingId);
+
+        if (booking == null) {
+            log.error("Booking not found for ID: {}", bookingId);
+            return;
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.PENDING) {
+            booking.setBookingStatus(BookingStatus.PAYMENT_FAILED);
+            log.info("Booking {} status updated to PAYMENT_FAILED.", bookingId);
+        } else {
+            log.info("Booking {} is in status {}, no change needed.", bookingId, booking.getBookingStatus());
+        }
+    }
+
+    @Transactional
+    public void refundBooking(UUID bookingId) {
+        Booking booking = bookingService.findBookingById(bookingId);
+
+        if (booking == null) {
+            log.error("Booking not found for ID: {}", bookingId);
+            return;
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.CONFIRMED) {
+            booking.setBookingStatus(BookingStatus.REFUNDED);
+            log.info("Booking {} status updated to REFUNDED.", bookingId);
+        } else {
+            log.info("Booking {} is in status {}, no change needed.", bookingId, booking.getBookingStatus());
         }
     }
 }
