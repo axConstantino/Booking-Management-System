@@ -1,24 +1,49 @@
 package com.axconstantino.reservationsystem.payment.controller;
 
+import com.axconstantino.reservationsystem.payment.database.ProcessedEvent;
+import com.axconstantino.reservationsystem.payment.database.repository.EventRepository;
 import com.axconstantino.reservationsystem.payment.service.StripeWebhookHandlerService;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.net.Webhook;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/webhook")
 @RequiredArgsConstructor
+@Tag(name = "Stripe Webhook", description = "Handling incoming events from Stripe")
 public class WebhookController {
 
     private final StripeWebhookHandlerService stripeWebhookService;
-    private final String webhookSecret;
+    private final EventRepository eventRepository;
 
+    @Value("${app.stripe.webhook-secret}")
+    private String webhookSecret;
+
+    @Value("${app.debug:false}")
+    private boolean debugMode;
+
+    @Operation(
+            summary = "Process Stripe events.",
+            description = "Receives signed events from Stripe, validates their authenticity, and processes them.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Event processed successfully"),
+                    @ApiResponse(responseCode = "400", description = "Invalid webhook signature"),
+                    @ApiResponse(responseCode = "409", description = "Event already processed"),
+                    @ApiResponse(responseCode = "500", description = "Internal error processing event")
+            }
+    )
+    @Transactional
     @PostMapping("/stripe")
     public ResponseEntity<String> handleStripeWebhook(
             @RequestBody String payload,
@@ -27,18 +52,37 @@ public class WebhookController {
         Event event;
         try {
             event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
-            log.info("Received Stripe event: {}", event.getType());
+            log.info("Received Stripe event: {} (ID: {})", event.getType(), event.getId());
+
+            if (eventRepository.existsById(event.getId())) {
+                log.warn("Evento duplicado detectado: {}", event.getId());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Event already processed");
+            }
+
         } catch (SignatureVerificationException e) {
-            log.error("Webhook signature verification failed.", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid signature");
+            log.error("Firma inválida para evento: {}", e.getSigHeader(), e);
+            return ResponseEntity.badRequest().body("Invalid signature");
+        } catch (Exception e) {
+            log.error("Error construyendo evento: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Error processing event");
         }
 
         try {
-            stripeWebhookService.handleEvent(event);
-            return ResponseEntity.ok("Success");
+            eventRepository.save(new ProcessedEvent(event.getId()));
+
+            stripeWebhookService.handleEventAsync(event);
+
+            return ResponseEntity.ok("Event processing started");
+
         } catch (Exception e) {
-            log.error("Error processing Stripe event", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Event processing failed");
+            log.error("Error procesando evento {}: {}", event.getId(), e.getMessage(), e);
+            eventRepository.deleteById(event.getId()); // Rollback de la idempotencia
+
+            String errorMessage = debugMode
+                    ? "Error: " + e.getMessage() + " | Event ID: " + event.getId()
+                    : "Event processing failed";
+
+            return ResponseEntity.internalServerError().body(errorMessage);
         }
     }
 }

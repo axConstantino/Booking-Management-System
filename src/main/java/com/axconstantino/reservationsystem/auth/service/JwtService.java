@@ -4,6 +4,7 @@ import com.axconstantino.reservationsystem.user.database.model.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -12,8 +13,14 @@ import java.util.Map;
 
 @Service
 public class JwtService {
+
+    @Value("${app.jwt.secret}")
     private String secretKey;
+
+    @Value("${app.jwt.access.expiration}")
     private long accessExpiration;
+
+    @Value("${app.jwt.refresh.expiration}")
     private long refreshExpiration;
 
     public String extractUserName(String token) {

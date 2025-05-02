@@ -2,7 +2,7 @@ spring:
   application:
     name: Booking-Management-App-Dev
   datasource:
-    url: jdbc:postgresql://localhost:5432/reservationsystem
+    url: jdbc:postgresql://localhost:5432/reservation-system
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -49,10 +49,11 @@ spring:
           writetimeout: 5000
 
 app:
-  frontend-url: http://localhost:3000
+  base-url: http://localhost:3000
   jwt:
-    secret: ${JWT_SECRET:default_dev_secret}
-    expiration-seconds: 86400
+    secret: ${JWT_SECRET}
+    access-expiration: 86400
+    refresh-expiration: 604800
   stripe:
     api-key: ${STRIPE_API_KEY}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET}

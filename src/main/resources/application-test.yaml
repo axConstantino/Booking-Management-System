@@ -87,7 +87,9 @@ app:
   security:
     jwt:
       secret: ${TEST_JWT_SECRET}
-      expiration-ms: 3600000
+      access-expiration: 3600000
+      refresh-expiration: 604800000
+
   stripe:
     test-mode: true
     api-key: ${TEST_STRIPE_API_KEY}
