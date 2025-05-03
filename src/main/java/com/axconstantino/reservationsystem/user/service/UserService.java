@@ -21,6 +21,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Service extends basic CRUD operations for {@link User} entities.
+ * and providing additional user-specific user behaviors such as:
+ * <ul>
+ *     <li>Retrieval by email.</li>
+ *     <li>Updating basic profile information.</li>
+ *     <li>Role management.</li>
+ *     <li>Phone number addition.</li>
+ *     <li>Password checks and reset workflows.</li>
+ * </ul>
+ */
 @Slf4j
 @Service
 public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserRepository, UserMapper> {
@@ -39,12 +50,28 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         this.authService = authService;
     }
 
+    /**
+     * Retrieves a {@link User} by their email address.
+     *
+     * @param email the email of the user to retrieve
+     * @return the {@link User} with the given email
+     * @throws NotFoundException if no user exists with that email
+     */
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
         return repository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(email));
     }
 
+    /**
+     * Updates a user's basic profile information (name, address, etc.)
+     * and optionally formats and stores a new phone number.
+     *
+     * @param email         the email of the user to update
+     * @param updateRequest a DTO containing new field values
+     * @return the updated {@link User} entity
+     * @throws NotFoundException if no user exists with that email
+     */
     @Transactional
     public User updateUserBasicInfo(String email, UserDTO updateRequest) {
         User user = repository.findByEmail(email)
@@ -59,6 +86,15 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         return repository.save(user);
     }
 
+    /**
+     * Adds a new role to the specified user, revokes existing authentication tokens,
+     * and persists the change.
+     *
+     * @param userId  the UUID of the user
+     * @param newRole the {@link Role} to add
+     * @throws NotFoundException        if the user does not exist
+     * @throws DuplicateEntityException if the user already has the role
+     */
     @Transactional
     public void addUserRole(UUID userId, Role newRole) {
         User user = repository.findById(userId)
@@ -73,6 +109,15 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         repository.save(user);
     }
 
+    /**
+     * Adds a phone number to the user’s profile, formatted to E.164.
+     *
+     * @param email the email of the user
+     * @param phone the raw phone number string
+     * @return the updated {@link User} entity
+     * @throws NotFoundException    if no user exists with that email
+     * @throws IllegalStateException if the user already has a phone number
+     */
     @Transactional
     public User addPhone(String email, String phone) {
         User user = repository.findByEmail(email)
@@ -86,6 +131,14 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         return repository.save(user);
     }
 
+    /**
+     * Changes the user’s password after validating the current one.
+     *
+     * @param email   the email of the user
+     * @param request DTO containing current and new password
+     * @throws NotFoundException  if the user does not exist
+     * @throws SecurityException if the current password is incorrect
+     */
     @Transactional
     public void changePassword(String email, ChangePasswordRequest request) {
         User user = getUserByEmail(email);
@@ -98,6 +151,13 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         repository.save(user);
     }
 
+    /**
+     * Initiates the password reset process by generating a token
+     * and sending it via email.
+     *
+     * @param email the email of the user requesting reset
+     * @throws NotFoundException if no user exists with that email
+     */
     @Transactional
     public void initiatePasswordReset(String email) {
         User user = repository.findByEmail(email)
@@ -107,6 +167,12 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         sendResetEmail(user.getEmail(), resetToken);
     }
 
+    /**
+     * Sends a password reset email containing the raw reset token.
+     *
+     * @param email the recipient’s email address
+     * @param token the raw password reset token
+     */
     private void sendResetEmail(String email, String token) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
@@ -115,6 +181,14 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
         mailSender.send(message);
     }
 
+    /**
+     * Completes the password reset by validating the provided token,
+     * encoding the new password, and saving the user.
+     *
+     * @param request DTO containing the reset token and new password
+     * @throws SecurityException if the token is invalid or expired
+     * @throws NotFoundException if no user exists for the validated token
+     */
     @Transactional
     public void completePasswordReset(ResetPasswordRequest request) {
         String email = tokenService.validatePasswordResetToken(request.getToken());
