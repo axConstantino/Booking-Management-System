@@ -5,6 +5,11 @@ import com.axconstantino.reservationsystem.booking.dto.BookingRequest;
 import com.axconstantino.reservationsystem.booking.dto.BookingResponse;
 import com.axconstantino.reservationsystem.booking.mapper.BookingMapper;
 import com.axconstantino.reservationsystem.booking.service.BookingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +29,12 @@ public class BookingUserController {
     private final BookingService bookingService;
     private final BookingMapper bookingMapper;
 
+    @Operation(summary = "Create a booking", description = "Creates a new booking for a specific room and user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Booking created successfully", content = @Content(schema = @Schema(implementation = BookingResponse.class))),
+            @ApiResponse(responseCode = "404", description = "User or Room not found"),
+            @ApiResponse(responseCode = "409", description = "Room is not available for the selected dates")
+    })
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(
             @RequestBody @Valid BookingRequest bookingRequest,
@@ -34,6 +45,7 @@ public class BookingUserController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Get bookings for user", description = "Returns all bookings for the given user")
     @GetMapping
     public ResponseEntity<List<BookingResponse>> getUserBookings(Authentication authentication) {
         String userEmail = authentication.getName();
@@ -41,6 +53,7 @@ public class BookingUserController {
         return new ResponseEntity<>(bookingMapper.toDtoList(bookings), HttpStatus.OK);
     }
 
+    @Operation(summary = "Get a booking by ID", description = "Returns booking details for a given ID and user email")
     @GetMapping("/{bookingId}")
     public ResponseEntity<BookingResponse> getBookingDetails(
             @PathVariable UUID bookingId,
@@ -51,6 +64,7 @@ public class BookingUserController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Update a booking", description = "Modifies a booking in PENDING status")
     @PutMapping("/{bookingId}")
     public ResponseEntity<BookingResponse> updateBooking(
             @PathVariable UUID bookingId,
@@ -62,6 +76,7 @@ public class BookingUserController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Cancel a booking", description = "Cancels a booking for the current user")
     @DeleteMapping("/{bookingId}")
     public ResponseEntity<Void> cancelBooking(
             @PathVariable UUID bookingId,
