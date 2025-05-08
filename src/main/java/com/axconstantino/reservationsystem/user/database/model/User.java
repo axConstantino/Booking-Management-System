@@ -14,6 +14,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,10 @@ import java.util.UUID;
 @Setter
 @Getter
 public class User {
+
+    @Version
+    private Long version;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -40,11 +45,11 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String password;
 
-    @Column(name = "reset_token")
+    @Column(name = "reset_token", unique = true)
     private String resetToken;
 
-     @Column(name = "token_expiry")
-    private LocalDateTime tokenExpiry;
+    @Column(name = "token_expiry")
+    private Instant tokenExpiry;
 
     @NotBlank(message = ValidationMessages.USER_EMAIL_BLANK)
     @Email(message = ValidationMessages.USER_EMAIL_INVALID)

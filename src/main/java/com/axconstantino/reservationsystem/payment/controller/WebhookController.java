@@ -55,15 +55,15 @@ public class WebhookController {
             log.info("Received Stripe event: {} (ID: {})", event.getType(), event.getId());
 
             if (eventRepository.existsById(event.getId())) {
-                log.warn("Evento duplicado detectado: {}", event.getId());
+                log.warn("Duplicate event detected: {}", event.getId());
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Event already processed");
             }
 
         } catch (SignatureVerificationException e) {
-            log.error("Firma inválida para evento: {}", e.getSigHeader(), e);
+            log.error("Invalid signature for event: {}", e.getSigHeader(), e);
             return ResponseEntity.badRequest().body("Invalid signature");
         } catch (Exception e) {
-            log.error("Error construyendo evento: {}", e.getMessage(), e);
+            log.error("Error building event: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body("Error processing event");
         }
 
@@ -75,8 +75,8 @@ public class WebhookController {
             return ResponseEntity.ok("Event processing started");
 
         } catch (Exception e) {
-            log.error("Error procesando evento {}: {}", event.getId(), e.getMessage(), e);
-            eventRepository.deleteById(event.getId()); // Rollback de la idempotencia
+            log.error("Error processing event {}: {}", event.getId(), e.getMessage(), e);
+            eventRepository.deleteById(event.getId());
 
             String errorMessage = debugMode
                     ? "Error: " + e.getMessage() + " | Event ID: " + event.getId()

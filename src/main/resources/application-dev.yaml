@@ -33,10 +33,10 @@ spring:
         shutdown-timeout: 100ms
 
   mail:
-    host: smtp.mailtrap.io
+    host: smtp.gmail.host
     port: 587
-    username: ${MAILTRAP_USERNAME}
-    password: ${MAILTRAP_PASSWORD}
+    username: olveraconstantinoaxel@gmail.com
+    password: gozb gvjy iofv vnpm
     protocol: smtp
     properties:
       mail:
@@ -57,6 +57,10 @@ app:
   stripe:
     api-key: ${STRIPE_API_KEY}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  cloudinary:
+    cloud-name: ${CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    secret-key: ${CLOUDINARY_SECRET_KEY}
 
 ---
 spring:

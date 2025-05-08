@@ -6,6 +6,8 @@ import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomType;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class RoomDTO {
     @NotBlank(message = ValidationMessages.ROOM_NAME_REQUIRED)
@@ -32,4 +34,6 @@ public class RoomDTO {
 
     @NotNull(message = ValidationMessages.ROOM_STATUS_REQUIRED)
     private RoomStatus status;
+
+    private List<RoomImageDTO> images;
 }

@@ -5,6 +5,7 @@ import com.axconstantino.reservationsystem.auth.dto.RegisterRequest;
 import com.axconstantino.reservationsystem.auth.dto.TokenResponse;
 import com.axconstantino.reservationsystem.common.exception.DuplicateEntityException;
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
+import com.axconstantino.reservationsystem.mail.EmailService;
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.model.enums.Role;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
@@ -31,6 +32,7 @@ import java.util.UUID;
 @Slf4j
 public class AuthService {
     private final JwtService jwtService;
+    private final EmailService emailService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -64,6 +66,9 @@ public class AuthService {
         final String jwtToken = jwtService.generateToken(savedUser);
         final String refreshToken = jwtService.generateRefreshToken(savedUser);
         saveRefreshToken(user.getId(), refreshToken);
+
+        emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getName());
+        log.info("Welcome email sent to: {}", savedUser.getEmail());
 
         return new TokenResponse(jwtToken, refreshToken);
     }

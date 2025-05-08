@@ -21,6 +21,14 @@ public class AuthConfig {
     private final UserRepository userRepository;
 
     @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
             final User user = userRepository.findByEmail(username)
@@ -30,17 +38,9 @@ public class AuthConfig {
                     .builder()
                     .username(user.getEmail())
                     .password(user.getPassword())
-                    .roles(user.getRoles().stream().map(Enum::name).toArray(String[]::new))
+                    .authorities(user.getRoles().stream().map(Enum::name).toArray(String[]::new))
                     .build();
         };
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService());
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
     }
 
     @Bean

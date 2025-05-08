@@ -110,7 +110,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-
     @Operation(
             summary = "Request password reset",
             description = "Initiate password recovery process"

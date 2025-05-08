@@ -4,6 +4,7 @@ import com.axconstantino.reservationsystem.auth.service.AuthService;
 import com.axconstantino.reservationsystem.common.exception.DuplicateEntityException;
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.common.utils.BaseCRUDService;
+import com.axconstantino.reservationsystem.mail.EmailService;
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.model.enums.Role;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
@@ -13,8 +14,6 @@ import com.axconstantino.reservationsystem.user.dto.UserDTO;
 import com.axconstantino.reservationsystem.user.mapper.UserMapper;
 import com.axconstantino.reservationsystem.validation.PhoneValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,15 +37,15 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
     private final PhoneValidator phoneValidator;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final AuthService authService;
 
-    public UserService(UserRepository repository, UserMapper mapper, PhoneValidator phoneValidator, PasswordEncoder passwordEncoder, TokenService tokenService, JavaMailSender mailSender, AuthService authService) {
+    public UserService(UserRepository repository, UserMapper mapper, PhoneValidator phoneValidator, PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, AuthService authService) {
         super(repository, mapper);
         this.phoneValidator = phoneValidator;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
         this.authService = authService;
     }
 
@@ -59,8 +58,12 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
      */
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
+        log.debug("Attempting to fetch user by email: {}", email);
         return repository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(email));
+                .orElseThrow(() -> {
+                    log.warn("User not found with email: {}", email);
+                    return new NotFoundException("User not found with email: " + email);
+                });
     }
 
     /**
@@ -74,17 +77,21 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
      */
     @Transactional
     public User updateUserBasicInfo(String email, UserDTO updateRequest) {
+        log.info("Updating basic info for user: {}", email);
         User user = repository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(email));
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
         mapper.updateFromDTO(user, updateRequest);
 
         if (updateRequest.getPhone() != null) {
-            user.setPhone(phoneValidator.formatToE164(updateRequest.getPhone()));
+            String formattedPhone = phoneValidator.formatToE164(updateRequest.getPhone());
+            log.debug("Updating phone number for user {}: {}", email, formattedPhone);
+            user.setPhone(formattedPhone);
         }
 
         return repository.save(user);
     }
+
 
     /**
      * Adds a new role to the specified user, revokes existing authentication tokens,
@@ -97,14 +104,17 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
      */
     @Transactional
     public void addUserRole(UUID userId, Role newRole) {
+        log.info("Adding role {} to user {}", newRole, userId);
         User user = repository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
 
         if (user.getRoles().contains(newRole)) {
-            throw new DuplicateEntityException("The user already has this role");
+            log.warn("Duplicate role assignment attempt: {} for user {}", newRole, userId);
+            throw new DuplicateEntityException("User already has role: " + newRole);
         }
 
         user.getRoles().add(newRole);
+        log.debug("Revoking all tokens for user {}", userId);
         authService.revokeAllUserTokens(user);
         repository.save(user);
     }
@@ -118,16 +128,19 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
      * @throws NotFoundException    if no user exists with that email
      * @throws IllegalStateException if the user already has a phone number
      */
-    @Transactional
     public User addPhone(String email, String phone) {
+        log.info("Adding phone number to user: {}", email);
         User user = repository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(email));
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
         if (user.getPhone() != null) {
-            throw new RuntimeException("You already have a phone number");
+            log.warn("Phone number already exists for user: {}", email);
+            throw new IllegalStateException("User already has a registered phone number");
         }
 
-        user.setPhone(phoneValidator.formatToE164(phone));
+        String formattedPhone = phoneValidator.formatToE164(phone);
+        log.debug("Formatted phone number for {}: {}", email, formattedPhone);
+        user.setPhone(formattedPhone);
         return repository.save(user);
     }
 
@@ -141,14 +154,18 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
      */
     @Transactional
     public void changePassword(String email, ChangePasswordRequest request) {
+        log.info("Password change requested for user: {}", email);
         User user = getUserByEmail(email);
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new SecurityException("Current password is incorrect");
+            log.warn("Invalid current password attempt for user: {}", email);
+            throw new SecurityException("Current password verification failed");
         }
 
+        log.debug("Encoding new password for user: {}", email);
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         repository.save(user);
+        log.info("Password successfully updated for user: {}", email);
     }
 
     /**
@@ -160,25 +177,17 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
      */
     @Transactional
     public void initiatePasswordReset(String email) {
+        log.info("Initiating password reset for: {}", email);
         User user = repository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Password reset attempt for non-existent user: {}", email);
+                    return new NotFoundException("User not found");
+                });
 
         String resetToken = tokenService.generatePasswordResetToken(user);
-        sendResetEmail(user.getEmail(), resetToken);
-    }
-
-    /**
-     * Sends a password reset email containing the raw reset token.
-     *
-     * @param email the recipient’s email address
-     * @param token the raw password reset token
-     */
-    private void sendResetEmail(String email, String token) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Password Reset Request");
-        message.setText("Your password reset token: " + token);
-        mailSender.send(message);
+        log.debug("Generated reset token for {}: {}", email, resetToken);
+        emailService.sendPasswordResetEmail(email, resetToken);
+        log.info("Password reset email sent to: {}", email);
     }
 
     /**
@@ -191,12 +200,22 @@ public class UserService extends BaseCRUDService<User, UserDTO, UUID, UserReposi
      */
     @Transactional
     public void completePasswordReset(ResetPasswordRequest request) {
+        log.info("Processing password reset completion");
         String email = tokenService.validatePasswordResetToken(request.getToken());
-        User user = repository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+        log.debug("Token validated for email: {}", email);
 
+        User user = repository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.error("Valid token for non-existent user: {}", email);
+                    return new NotFoundException("User not found");
+                });
+
+        log.debug("Encoding new password for {}", email);
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         repository.save(user);
+        log.info("Password successfully reset for user: {}", email);
+        authService.revokeAllUserTokens(user);
+        log.debug("All tokens revoked for user: {}", email);
     }
 
 }

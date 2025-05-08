@@ -1,88 +1,103 @@
 package com.axconstantino.reservationsystem.user.service;
 
+import com.axconstantino.reservationsystem.common.exception.ExpiredTokenException;
+import com.axconstantino.reservationsystem.common.exception.InvalidTokenException;
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Service responsible for generating and validating
- * password reset tokens for User entities.
- *<p>
- *     Tokens are randoms UUID, encoded before storage to prevent
- *     plaintexts leaks, and have limited validity period.
- *</p>
+ * Service responsible for secure password reset token generation and validation.
+ * <p>
+ * Implements best practices for token security:
+ * <ul>
+ *   <li>HMAC-SHA256 cryptographic signing</li>
+ *   <li>Immediate token invalidation after use</li>
+ *   <li>Time-zone agnostic expiration handling</li>
+ *   <li>Database-level token uniqueness</li>
+ * </ul>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TokenService {
-    /**
-     * Repository for User entities, used to persist tokens state.
-     */
     private final UserRepository repository;
 
-    /**
-     * Encoder for hashing token values prior to storage.
-     */
-    private final PasswordEncoder passwordEncoder;
+    @Value("${app.token.secret}")
+    private String tokenSecret;
 
     /**
-     * Generate a one-time password reset token for the given user.
-     * <p>
-     *     Steps performed:
-     *     <ol>
-     *         <li>Generate a random UUID as the raw token value.</li>
-     *         <li>Encode the token used the configured {@link PasswordEncoder}.</li>
-     *         <li>Store the encoded token and expiration timestamp (2 hours from now)
-     *             on the {@code User} entity.</li>
-     *         <li>Save the updated user record to the database.</li>
-     *         <li>Return the raw (unencoded) token so it can be emailed to the user.</li>
-     *     </ol>
-     * </p>
-     * @param user the {@link User} for whom the token is generated.
-     * @return the raw token string (UUID) to be delivered to the user.
+     * Generates a secure password reset token.
+     *
+     * @param user User entity to associate with the token
+     * @return Raw token value (to be shared with user)
+     * @implNote
+     * 1. Generates cryptographically-secure UUID
+     * 2. Signs token with HMAC-SHA256
+     * 3. Stores hashed token and UTC expiration time
      */
     public String generatePasswordResetToken(User user) {
-        String tokenValue = UUID.randomUUID().toString();
-        String encodedToken = passwordEncoder.encode(tokenValue);
+        String rawToken = UUID.randomUUID().toString();
+        String hashedToken = HmacUtil.hmacSha256(tokenSecret, rawToken);
 
-        user.setResetToken(encodedToken);
-        user.setTokenExpiry(LocalDateTime.now().plusHours(2));
+        user.setResetToken(hashedToken);
+        user.setTokenExpiry(Instant.now().plusSeconds(7200));  // 2 hours
         repository.save(user);
 
-        return tokenValue;
+        log.info("Generated reset token for user: {}", user.getEmail());
+        return rawToken;
     }
 
     /**
-     * Validates a password reset token and returns the associated user's email.
-     * <p>
-     *     Validation logic:
-     *     <ul>
-     *         <li>Encode the provided raw token and attempt to look up a matching user</li>
-     *         <li>If not matching user is found, throw a {@link SecurityException}.</li>
-     *         <li>If the token has expired (current time is after stored expiry),
-     *             throw a {@link SecurityException}.</li>
-     *         <li>Otherwise, return the user's email for downstream password-reset logic.</li>
-     *     </ul>
-     * </p>
-     * @param token the raw token string provided by the client.
-     * @return the email address of the user who owns this token.
-     * @throws SecurityException if the token is invalid or has expired
+     * Validates and consumes a password reset token.
+     *
+     * @param rawToken Token provided by the user
+     * @return Associated user's email if valid
+     * @throws InvalidTokenException If no matching token found
+     * @throws ExpiredTokenException If token exists but has expired
+     * @implNote
+     * 1. Always invalidates token after validation (even if expired)
+     * 2. Uses optimized database query for token lookup
      */
-    public String validatePasswordResetToken(String token) {
-        // Note: to match the stored encoded token we must encode the provided token.
-        User user = repository.findByResetToken(passwordEncoder.encode(token))
-                .orElseThrow(() -> new SecurityException("Invalid token"));
+    public String validatePasswordResetToken(String rawToken) {
+        String hashedToken = HmacUtil.hmacSha256(tokenSecret, rawToken);
+        List<User> users = repository.findAllWithResetToken();
 
-        if (user.getTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new SecurityException("Token expired");
+        User user = users.stream()
+                .filter(u -> hashedToken.equals(u.getResetToken()))
+                .findFirst()
+                .orElseThrow(() -> {
+                    log.warn("Invalid token attempt: {}", rawToken);
+                    return new InvalidTokenException("Invalid token");
+                });
+
+        if (user.getTokenExpiry() == null || user.getTokenExpiry().isBefore(Instant.now())) {
+            log.warn("Expired token for user: {}", user.getEmail());
+            clearToken(user);
+            throw new ExpiredTokenException("Token expired");
         }
 
+        clearToken(user);
         return user.getEmail();
     }
 
+    /**
+     * Clears reset token fields from user entity.
+     *
+     * @param user User entity to modify
+     * @apiNote Internal utility method
+     */
+    private void clearToken(User user) {
+        user.setResetToken(null);
+        user.setTokenExpiry(null);
+        repository.save(user);
+        log.debug("Cleared token for user: {}", user.getEmail());
+    }
 }
