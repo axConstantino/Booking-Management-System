@@ -66,6 +66,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-
+    @Operation(summary = "Logout user, revoca refresh token")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @RequestHeader("Authorization") String authHeader) {
+        service.logout(authHeader);
+        return ResponseEntity.ok().build();
+    }
 }
 

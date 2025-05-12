@@ -57,7 +57,7 @@ public class AuthService {
                 .name(registerRequest.getName())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .roles(Set.of(Role.ROLE_USER))
+                .roles(Set.of(Role.USER))
                 .build();
 
         final User savedUser = userRepository.save(user);
@@ -202,6 +202,23 @@ public class AuthService {
             log.warn("Invalid token signature for user: {}", user.getEmail());
             throw new SecurityException("Invalid token signature");
         }
+    }
+
+
+    /**
+     * Revokes all refresh tokens from the user (logout server-side).
+     *
+     * @param authHeader the header “ Authorization: Bearer <refreshToken> ”
+     */
+    @Transactional
+    public void logout(String authHeader) {
+        validateAuthHeader(authHeader);
+        String refreshToken = authHeader.substring(7);
+        String userEmail = jwtService.extractUserName(refreshToken);
+        User user = getUserByEmail(userEmail);
+        // We delete the token in Redis
+        revokeAllUserTokens(user);
+        log.info("User logged out and tokens revoked: {}", userEmail);
     }
 
     /**

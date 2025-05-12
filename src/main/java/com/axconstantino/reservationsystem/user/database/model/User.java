@@ -71,6 +71,7 @@ public class User {
     @Column(name = "role", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @NotEmpty(message = ValidationMessages.USER_ROLES_EMPTY)
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
     @CreationTimestamp

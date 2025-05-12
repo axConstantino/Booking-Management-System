@@ -38,7 +38,7 @@ public class AuthConfig {
                     .builder()
                     .username(user.getEmail())
                     .password(user.getPassword())
-                    .authorities(user.getRoles().stream().map(Enum::name).toArray(String[]::new))
+                    .roles(user.getRoles().stream().map(Enum::name).toArray(String[]::new))
                     .build();
         };
     }

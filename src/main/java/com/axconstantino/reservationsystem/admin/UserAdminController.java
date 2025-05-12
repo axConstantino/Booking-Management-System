@@ -13,11 +13,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@RequestMapping("admin/users")
+@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping("/admin/users")
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Admin - User Management", description = "Endpoints for managing users by administrators")
