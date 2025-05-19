@@ -14,7 +14,6 @@ import com.axconstantino.reservationsystem.rooms.database.repository.RoomReposit
 import com.axconstantino.reservationsystem.user.database.model.User;
 import com.axconstantino.reservationsystem.user.database.repository.UserRepository;
 import com.stripe.exception.StripeException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

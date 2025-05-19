@@ -5,7 +5,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - .env.test
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - DB_URL=jdbc:postgresql://db:5432/reservation_system
