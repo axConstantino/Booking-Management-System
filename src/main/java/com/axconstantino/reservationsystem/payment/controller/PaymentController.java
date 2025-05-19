@@ -1,5 +1,7 @@
 package com.axconstantino.reservationsystem.payment.controller;
 
+import com.axconstantino.reservationsystem.common.utils.ErrorResponse;
+import com.axconstantino.reservationsystem.payment.dto.CheckoutSessionResponse;
 import com.axconstantino.reservationsystem.payment.dto.PaymentInitiateResponse;
 import com.axconstantino.reservationsystem.payment.service.PaymentService;
 import com.stripe.exception.StripeException;
@@ -27,7 +29,7 @@ public class PaymentController {
 
     @Operation(
             summary = "Initiate payment for a booking",
-            description = "Creates a Stripe Checkout Session for the given booking ID and logged-in user. Returns a URL to redirect the client to Stripe.",
+            description = "Creates a Stripe Checkout Session for the given booking ID and logged-in user if the booking is in PENDING status. Returns a URL to redirect the client to Stripe.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -42,16 +44,20 @@ public class PaymentController {
                             description = "Error creating Stripe checkout session",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PaymentInitiateResponse.class)
+                                    schema = @Schema(
+                                            implementation = ErrorResponse.class
+                                    )
                             )
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = "Booking not found or does not belong to user"
+                            description = "Booking not found or does not belong to user",
+                            content = @Content(mediaType = "application/json")
                     ),
                     @ApiResponse(
                             responseCode = "409",
-                            description = "Booking is not in PENDING status"
+                            description = "Booking is not in PENDING status",
+                            content = @Content(mediaType = "application/json")
                     )
             }
     )
@@ -63,13 +69,16 @@ public class PaymentController {
         String userEmail = authentication.getName();
 
         try {
-            String checkoutUrl = paymentService.createCheckoutSession(bookingId, userEmail);
-            return ResponseEntity.ok(new PaymentInitiateResponse(checkoutUrl));
+            CheckoutSessionResponse checkoutSession = paymentService.createCheckoutSession(bookingId, userEmail);
+            return ResponseEntity.ok(new PaymentInitiateResponse(checkoutSession.url(), checkoutSession.sessionId()));
         } catch (StripeException e) {
             log.info("Error creating Stripe checkout session: {}", e.getMessage());
-            return ResponseEntity.status(500).body(new PaymentInitiateResponse("Error initiating payment " + e.getMessage()));
+            return ResponseEntity.status(500).body(new PaymentInitiateResponse("Error initiating payment: " + e.getMessage(), null));
         }
     }
+
+
+
 
     @Operation(
             summary = "Handle successful payment",
@@ -89,6 +98,11 @@ public class PaymentController {
             @RequestParam UUID bookingId) {
         return ResponseEntity.ok("!Payment successful! Your reservation is confirmed. ID: " + bookingId);
     }
+
+
+
+
+
     @Operation(
             summary = "Handle canceled payment",
             description = "Endpoint called by Stripe redirect when the user cancels payment. Returns a cancellation message.",

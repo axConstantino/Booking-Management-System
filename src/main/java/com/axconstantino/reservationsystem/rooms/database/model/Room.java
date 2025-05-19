@@ -1,5 +1,6 @@
 package com.axconstantino.reservationsystem.rooms.database.model;
 
+import com.axconstantino.reservationsystem.booking.database.model.Booking;
 import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomStatus;
 import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomType;
 import jakarta.persistence.*;
@@ -51,4 +52,7 @@ public class Room {
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomImage> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "room", fetch = FetchType.LAZY)
+    private List<Booking> bookings = new ArrayList<>();
 }

@@ -52,7 +52,7 @@ public class StripeWebhookHandlerService {
      *
      * @param event the Stripe event payload
      */
-    @Async("stripeAsyncExecutor")
+    @Async("asyncStripeExecutor")
     public void handleEventAsync(Event event) {
         log.info("Processing async event ID: {}, Type: {}", event.getId(), event.getType());
         try {

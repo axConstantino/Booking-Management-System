@@ -3,9 +3,9 @@ package com.axconstantino.reservationsystem.auth.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record TokenResponse(
-        @JsonProperty("access_token")
+        @JsonProperty("accessToken")
         String accessToken,
-        @JsonProperty("refresh_token")
+        @JsonProperty("refreshToken")
         String refreshToken
 ) {
 }

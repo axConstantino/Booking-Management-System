@@ -64,9 +64,13 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
         CriteriaQuery<Room> cq = cb.createQuery(Room.class);
         Root<Room> room = cq.from(Room.class);
 
+        // Join explícito con Booking (requiere relación en la entidad Room)
+        Join<Room, Booking> bookingJoin = room.join("bookings", JoinType.LEFT);
+
         List<Predicate> predicates = buildPredicates(filter, cb, room);
 
-        cq.where(predicates.toArray(new Predicate[0]))
+        cq.select(room)
+                .where(predicates.toArray(new Predicate[0]))
                 .orderBy(createOrder(cb, room, filter));
 
         TypedQuery<Room> query = entityManager.createQuery(cq)
@@ -80,10 +84,9 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
 
         long total = countTotalResults(filter, cb, predicates);
 
-        log.info("Query returned {} rooms (page={}, size={}, total={})", content.size(), filter.getPage(), filter.getSize(), total);
-
         return new PageImpl<>(content, PageRequest.of(filter.getPage(), filter.getSize()), total);
     }
+
 
     // --- Private Helper Methods ---
 
@@ -97,11 +100,18 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
      */
     private long countTotalResults(RoomFilterRequest filter, CriteriaBuilder cb, List<Predicate> predicates) {
         log.debug("Entering countTotalResults with filter={} and {} predicates", filter, predicates.size());
+
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Room> room = countQuery.from(Room.class);
 
-        countQuery.select(cb.count(room))
-                .where(predicates.toArray(new Predicate[0]));
+        // 1. Mismo join que en la consulta principal
+        Join<Room, Booking> bookingJoin = room.join("bookings", JoinType.LEFT);
+
+        // 2. Reconstruir predicates usando el join
+        List<Predicate> countPredicates = rebuildPredicatesForCount(filter, cb, room);
+
+        countQuery.select(cb.countDistinct(room)) // Usar distinct para evitar duplicados
+                .where(countPredicates.toArray(new Predicate[0]));
 
         long result = entityManager.createQuery(countQuery).getSingleResult();
         log.debug("Count query result: {}", result);
@@ -120,12 +130,50 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
         log.debug("Building predicates for filter={}", filter);
         List<Predicate> predicates = new ArrayList<>();
 
+        predicates.add(cb.equal(room.get("status"), RoomStatus.AVAILABLE));
         addCapacityPredicate(filter, cb, room, predicates);
         addPricePredicates(filter, cb, room, predicates);
         addTypePredicate(filter, cb, room, predicates);
         addAvailabilityPredicate(filter, cb, room, predicates);
 
-        log.debug("Built {} predicates", predicates.size());
+        return predicates;
+    }
+
+    private List<Predicate> rebuildPredicatesForCount(RoomFilterRequest filter, CriteriaBuilder cb, Root<Room> room) {
+        List<Predicate> predicates = new ArrayList<>();
+
+        // Status siempre aplica
+        predicates.add(cb.equal(room.get("status"), RoomStatus.AVAILABLE));
+
+        // Fechas
+        if (filter.getStartDate() != null && filter.getEndDate() != null) {
+            Subquery<Booking> subquery = cb.createQuery().subquery(Booking.class);
+            Root<Booking> booking = subquery.from(Booking.class);
+
+            Predicate roomMatch = cb.equal(booking.get("room"), room);
+            Predicate dateOverlap = cb.and(
+                    cb.lessThan(booking.get("startDate"), filter.getEndDate()),
+                    cb.greaterThan(booking.get("endDate"), filter.getStartDate())
+            );
+
+            subquery.select(booking).where(cb.and(roomMatch, dateOverlap));
+            predicates.add(cb.not(cb.exists(subquery)));
+        }
+
+        // Otros filtros (capacidad, precio, tipo)
+        if (filter.getCapacity() != null) {
+            predicates.add(cb.ge(room.get("capacity"), filter.getCapacity()));
+        }
+        if (filter.getMinPrice() != null) {
+            predicates.add(cb.ge(room.get("pricePerNight"), filter.getMinPrice()));
+        }
+        if (filter.getMaxPrice() != null) {
+            predicates.add(cb.le(room.get("pricePerNight"), filter.getMaxPrice()));
+        }
+        if (filter.getType() != null) {
+            predicates.add(cb.equal(room.get("type"), filter.getType()));
+        }
+
         return predicates;
     }
 
@@ -138,14 +186,8 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
      * @param predicates list to which new predicates will be added
      */
     private void addAvailabilityPredicate(RoomFilterRequest filter, CriteriaBuilder cb, Root<Room> room, List<Predicate> predicates) {
-        log.debug("Adding availability predicate");
-        // Only include rooms with AVAILABLE status
-        predicates.add(cb.equal(room.get("status"), RoomStatus.AVAILABLE));
-
         if (filter.getStartDate() != null && filter.getEndDate() != null) {
-            log.debug("Filtering by date range: {} to {}", filter.getStartDate(), filter.getEndDate());
-            CriteriaQuery<?> cq = cb.createQuery();
-            Subquery<Booking> subquery = cq.subquery(Booking.class);
+            Subquery<Booking> subquery = cb.createQuery().subquery(Booking.class);
             Root<Booking> booking = subquery.from(Booking.class);
 
             Predicate roomMatch = cb.equal(booking.get("room"), room);
@@ -154,11 +196,8 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
                     cb.greaterThan(booking.get("endDate"), filter.getStartDate())
             );
 
-            subquery.select(booking)
-                    .where(cb.and(roomMatch, dateOverlap));
-
+            subquery.select(booking).where(cb.and(roomMatch, dateOverlap));
             predicates.add(cb.not(cb.exists(subquery)));
-            log.debug("Added date-overlap exclusion subquery");
         }
     }
 
@@ -274,3 +313,6 @@ public class RoomRepositoryCustomImpl implements RoomRepositoryCustom {
         }
     }
 }
+
+
+

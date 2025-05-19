@@ -24,13 +24,13 @@ import java.util.UUID;
  *   <li>Database-level token uniqueness</li>
  * </ul>
  */
-@Slf4j
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class TokenService {
     private final UserRepository repository;
 
-    @Value("${app.token.secret}")
+    @Value("${app.security.token.password-reset}")
     private String tokenSecret;
 
     /**

@@ -5,22 +5,26 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class BookingRequest {
     @NotNull
     private Long roomId;
 
     @NotNull
     @FutureOrPresent
-    private LocalDateTime startDate;
+    private LocalDate startDate;
 
     @NotNull
     @Future
-    private LocalDateTime endDate;
+    private LocalDate endDate;
 
     @AssertTrue(message = ValidationMessages.DATE_RANGE_INVALID)
     private boolean isEndDateAfterStartDate() {

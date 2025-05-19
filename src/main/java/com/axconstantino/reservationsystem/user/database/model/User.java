@@ -1,5 +1,6 @@
 package com.axconstantino.reservationsystem.user.database.model;
 
+import com.axconstantino.reservationsystem.booking.database.model.Booking;
 import com.axconstantino.reservationsystem.user.database.model.enums.Role;
 import com.axconstantino.reservationsystem.validation.ValidPhone;
 import com.axconstantino.reservationsystem.constants.ValidationMessages;
@@ -16,9 +17,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Table(name = "users")
@@ -81,5 +80,9 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Booking> bookings = new ArrayList<>();
 
 }

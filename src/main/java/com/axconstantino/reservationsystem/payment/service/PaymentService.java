@@ -4,6 +4,7 @@ import com.axconstantino.reservationsystem.booking.database.model.Booking;
 import com.axconstantino.reservationsystem.booking.database.model.enums.BookingStatus;
 import com.axconstantino.reservationsystem.booking.service.BookingService;
 import com.axconstantino.reservationsystem.common.exception.ConflictException;
+import com.axconstantino.reservationsystem.payment.dto.CheckoutSessionResponse;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
@@ -43,7 +44,7 @@ public class PaymentService {
      * Stripe secret API key, injected from application properties
      * at property path {@code app.stripe.api-key}.
      */
-    @Value("${app.stripe.api-key}")
+    @Value("${app.payments.stripe.api-key}")
     private String stripeSecretKey;
 
     /**
@@ -69,42 +70,49 @@ public class PaymentService {
     }
 
     /**
-     * Creates a Stripe Checkout Session for the given booking.
+     * Creates a Stripe Checkout Session for the specified booking.
      *
      * <p>
-     *     Validates that the booking exists, belongs to the specified user,
-     *     and is still in PENDING status. Then constructs
-     *     a line item with the room name, reservation dates, and total amount.
-     *     The session's success and cancellation URLs include the bookingId
-     *     as a query parameter.
+     * This method performs the following steps:
+     * <ul>
+     *   <li>Validates that the booking exists and belongs to the given user email.</li>
+     *   <li>Checks that the booking is in {@code PENDING} status; otherwise, throws a {@link ConflictException}.</li>
+     *   <li>Calculates the total amount to be paid and converts it to the smallest currency unit (cents).</li>
+     *   <li>Builds the Stripe Checkout Session parameters, including:
+     *     <ul>
+     *       <li>Payment method type (card).</li>
+     *       <li>Payment mode (payment).</li>
+     *       <li>Success and cancellation URLs, including the booking ID as a query parameter.</li>
+     *       <li>Line item describing the booking (room name, reservation dates, and total amount).</li>
+     *       <li>Metadata with the booking ID.</li>
+     *     </ul>
+     *   </li>
+     *   <li>Creates and returns the Stripe Checkout Session response containing the session URL and ID.</li>
+     * </ul>
      * </p>
+     *
      * @param bookingId the UUID of the booking to be paid.
      * @param userEmail the email address of the booking owner.
-     * @return a URL string pointing to the Stripe Checkout page.
-     * @throws ConflictException if the booking status is not PENDING.
-     * @throws StripeException if any error occurs during the Stripe API call.
+     * @return a {@link CheckoutSessionResponse} containing the URL to redirect the client to Stripe and the session ID.
+     * @throws ConflictException if the booking status is not {@code PENDING}.
+     * @throws StripeException if an error occurs while creating the Stripe Checkout Session via the Stripe API.
      */
     @Transactional
-    public String createCheckoutSession(UUID bookingId, String userEmail) throws StripeException {
-
-        //1. Retrieve and validate booking
+    public CheckoutSessionResponse createCheckoutSession(UUID bookingId, String userEmail) throws StripeException {
         Booking booking = bookingService.findByIdAndUser(bookingId, userEmail);
 
         if (booking.getBookingStatus() != BookingStatus.PENDING) {
             throw new ConflictException("Booking is not pending status");
         }
 
-        //2. Convert total price to cents (Stripe expects amounts in the smallest currency unit)
         BigDecimal totalAmount = booking.getTotalPrice();
         long amountInCents = totalAmount.multiply(BigDecimal.valueOf(100))
                 .setScale(0, RoundingMode.HALF_UP)
                 .longValueExact();
 
-        //3. Build success and cancel URLs
         String successUrl = appBaseURL + "/payment/success?bookingId=" + bookingId;
         String cancelUrl = appBaseURL + "/payment/cancel?bookingId=" + bookingId;
 
-        //4. Assemble Stripe session parameters
         SessionCreateParams params = SessionCreateParams.builder()
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .setMode(SessionCreateParams.Mode.PAYMENT)
@@ -130,9 +138,8 @@ public class PaymentService {
                 .putMetadata("bookingId", booking.getId().toString())
                 .build();
 
-        //5. Create and return the session URL
         Session session = Session.create(params);
-        return session.getUrl();
+        return new CheckoutSessionResponse(session.getUrl(), session.getId());
     }
 
     /**

@@ -3,20 +3,27 @@ package com.axconstantino.reservationsystem.rooms.dto;
 import com.axconstantino.reservationsystem.constants.ValidationMessages;
 import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomType;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class RoomFilterRequest {
 
     @NotNull(message = ValidationMessages.DATE_START_REQUIRED)
     @FutureOrPresent(message = ValidationMessages.DATE_START_FUTURE)
-    private LocalDateTime startDate;
+    private LocalDate startDate;
 
     @NotNull(message = ValidationMessages.DATE_END_REQUIRED)
     @Future(message = ValidationMessages.DATE_END_FUTURE)
-    private LocalDateTime endDate;
+    private LocalDate endDate;
 
     @Min(value = 1, message = ValidationMessages.CAPACITY_MIN)
     @Max(value = 10, message = ValidationMessages.CAPACITY_MAX)

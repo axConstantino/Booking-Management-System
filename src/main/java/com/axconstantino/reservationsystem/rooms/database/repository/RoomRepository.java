@@ -11,6 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface RoomRepository extends BaseRepository<Room, Long>, RoomRepositoryCustom {
+    Optional<Room> findByName(String name);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM Room r WHERE r.id = :id")

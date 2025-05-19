@@ -4,11 +4,13 @@ import com.axconstantino.reservationsystem.constants.ValidationMessages;
 import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomStatus;
 import com.axconstantino.reservationsystem.rooms.database.model.enums.RoomType;
 import jakarta.validation.constraints.*;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
+@Builder
 public class RoomDTO {
     @NotBlank(message = ValidationMessages.ROOM_NAME_REQUIRED)
     @Size(min = 3, max = 50, message = ValidationMessages.ROOM_NAME_LENGTH)

@@ -22,12 +22,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/webhook")
 @RequiredArgsConstructor
 @Tag(name = "Stripe Webhook", description = "Handling incoming events from Stripe")
-public class WebhookController {
+public class StripeWebhookController {
 
     private final StripeWebhookHandlerService stripeWebhookService;
     private final EventRepository eventRepository;
 
-    @Value("${app.stripe.webhook-secret}")
+    @Value("${app.payments.stripe.webhook-secret}")
     private String webhookSecret;
 
     @Value("${app.debug:false}")

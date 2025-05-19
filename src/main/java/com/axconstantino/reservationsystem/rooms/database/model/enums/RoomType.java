@@ -1,8 +1,7 @@
 package com.axconstantino.reservationsystem.rooms.database.model.enums;
 
 public enum RoomType {
-    SINGLE,
-    DOUBLE,
+    STANDARD,
     SUITE,
-    CABIN
+    DELUXE
 }

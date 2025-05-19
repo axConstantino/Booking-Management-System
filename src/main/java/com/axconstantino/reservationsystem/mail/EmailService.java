@@ -1,7 +1,6 @@
 package com.axconstantino.reservationsystem.mail;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -14,9 +13,6 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private final JavaMailSender mailSender;
-
-    @Value("${app.password.reset.url}")
-    private String resetPasswordUrl;
 
     public void sendWelcomeEmail(String email, String name) {
         String subject = "Welcome to Our Hotel Booking Platform!";
@@ -32,6 +28,7 @@ public class EmailService {
 
     public void sendPasswordResetEmail(String email, String token) {
         String subject = "Reset your password";
+        String resetPasswordUrl = "http://localhost:8080/api/v1/auth/reset-password";
         String body = "To reset your password, please click the link below:\n"
                 + resetPasswordUrl + "?token=" + token + "\n\n"
                 + "This link will expire in 2 hours.\n"

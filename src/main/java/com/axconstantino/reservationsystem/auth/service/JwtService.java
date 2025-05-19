@@ -25,17 +25,17 @@ import java.util.stream.Collectors;
  * </ul>
  * <p>
  */
-@Slf4j
 @Service
+@Slf4j
 public class JwtService {
 
-    @Value("${app.jwt.secret}")
+    @Value("${app.security.jwt.secret}")
     private String secretKey;
 
-    @Value("${app.jwt.access.expiration}")
+    @Value("${app.security.jwt.access-expiration}")
     private long accessExpiration;
 
-    @Value("${app.jwt.refresh.expiration}")
+    @Value("${app.security.jwt.refresh-expiration}")
     private long refreshExpiration;
 
     /**
@@ -100,7 +100,8 @@ public class JwtService {
 
         Map<String, Object> claims = Map.of(
                 "name", userName,  // Use the null-checked name
-                "roles", roles    // Use the processed roles list
+                "roles", roles, // Use the processed roles list
+                "once", UUID.randomUUID().toString() // Unique identifier for the token
         );
 
         long now = System.currentTimeMillis();
@@ -181,7 +182,7 @@ public class JwtService {
                 .collect(Collectors.toList());
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSignInKey())
                 .build()

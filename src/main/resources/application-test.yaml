@@ -18,7 +18,7 @@ spring:
       on-profile: test
 
   datasource:
-    url: jdbc:tc:postgresql:16:///testdb?TC_TMPFS=/testtmpfs
+    url: jdbc:tc:postgresql:16:///testdb?TC_TMPFS=/testtmpfs:rw
     username: test
     password: test
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
@@ -29,8 +29,9 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
+    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
@@ -39,11 +40,12 @@ spring:
           batch_size: 20
         query:
           in_clause_parameter_padding: true
+  sql:
+    init:
+      mode: always
 
   data:
     redis:
-      host: localhost
-      port: 6379
       database: 1
       lettuce:
         shutdown-timeout: 100ms
@@ -69,13 +71,13 @@ spring:
     api-docs:
       enabled: true
     info:
-      title: Portfolio API - TEST
+      title: BookingManagementSystem API - TEST
       version: 1.0.0
       description: API Documentation (Test Environment)
 
 
   server:
-    port: 0
+    port: 8080
     error:
       include-message: always
       include-binding-errors: always
@@ -83,17 +85,25 @@ spring:
       context-path: /
 
 app:
-  frontend-url: http://localhost:3000
+  base-url: http://localhost:8080
   security:
     jwt:
-      secret: 51f1ebd91950319c7c05dfff4bfed4e89535eeccc9d8336c45de6150216e0cd97c3cc9041b5fdf3cad8631069dccc2fd7800e623446ffc78ab85184580cb9f9b2eed98a27c429fbc5974b16cef1a7a3a820f49568994039b4b1e5c1b28a5841023e7344583feae70f520a13789244edf769cf025bf16ea5d93d199b3b00d15fa87df8fa1be3514a3d0cbd4d67edb482597a1882e8c2fc7b62534853530e500b7b451c5fd2616d3c2778af628e2ce14210c4719649116abec8392564c653983e6580c148e7172ca1a61ff96efb58c0b254a237a0b07081b5762d75ac2a657489e1c9147dff1d7f7fd0afae53131b6c4bb1dcf75fec4e11af3ad237b95128b8f55
-      access-expiration: 3600000
-      refresh-expiration: 604800000
-
-  stripe:
-    test-mode: true
-    api-key: ${TEST_STRIPE_API_KEY}
-    webhook-secret: ${TEST_STRIPE_WEBHOOK_SECRET}
+      secret: d0ddef2fc3e9018f9e36355d99c181d7b134652d3cb3cad944fdb0bcb54704eaf6aa5616f2b390d388775c0cb35ad2093c75ea7050d38667f579b2312dacbc5dce4880f014c0023f4ca0c37ac6146b6155721805baa1494c9964d0959ba11309803c653fc27115c70a06bbe71b9c7541dc3a1d34128eb940e4bf22d5bbf9f519c674a0f1c04ad37aad4462dc2b6057a835a1b10e5b8f3132017d0fbec85472dae171b5e45292d1cbe1b21b94232fb048c88adb023cfb655f14c8b9e9f5593e9c759df7fe09958be315ffeff0608fa1fc192051290fc72ec79bfd5cad670f0e47798ea5a02716c751709ba886e78daac6ada4f872e84d12030895adb663459cc5
+      access-expiration: 600000
+      refresh-expiration: 1800000
+    token:
+      password-reset: c0e6967c9fa5eb1a4891b66ae0c3eff83767aaf275b3b00437b2c583bff9f3670a9e3a8a9419a8e472f749943208db50cd4873173d6782d2a65bc6fb7fd1fb1af5138b1716391e4502329e53ea681e4e521a774919562ae27c6f3c6752408682b7370813dad8880ac7695b77fbfc1c4e58e99064f6be359050941be0fc2983f66f25e3406870c518e393fe95a2e12b5ff3d8cc39b7604555a9c5e8d8065ea7840fca6607f307d2bff62220d8c0e995a10dbed4cd992af180f8374c1c545f6763e6e667abda63d94953134dcb81e2d2efff6054caa083a236c0cf866fae1d969d86ec13c5dcae9d43709b241e478212f9a2ae4761ff8feeb410d8b89cbbf55d4f
+  payments:
+    stripe:
+      test-mode: true
+      #secure key for testing only
+      api-key:  sk_test_51RHunaFPdYwjau3zeHHNeX4KYO8Nb4IFki1tQ830fwq9bU7LJdpqxwTDONbMqgEUpckehcaUInYu7ObyRqDM6U3e00o8AhQt6N
+      webhook-secret: whsec_cb8141b65c35b0771ebb56649dc3f9a6231f3e2fee9a9ec9d4f211b3354cdfbc
+  cloud:
+    cloudinary:
+      cloud-name: cloudinary
+      api-key: api-key-cloudinary
+      api-secret: api-secret-cloudinary
 
 logging:
   level:

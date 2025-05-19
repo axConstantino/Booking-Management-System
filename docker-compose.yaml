@@ -4,6 +4,8 @@ services:
     build: .
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - DB_URL=jdbc:postgresql://db:5432/reservation_system
@@ -12,11 +14,15 @@ services:
       - REDIS_HOST=redis
       - JWT_SECRET=your_jwt_secret
       - STRIPE_API_KEY=your_stripe_key
+      - MAIL_HOST=mailhog
+      - MAIL_PORT=1025
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailhog:
+        condition: service_started
 
   db:
     restart: unless-stopped
@@ -46,6 +52,14 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

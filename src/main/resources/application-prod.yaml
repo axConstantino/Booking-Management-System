@@ -45,7 +45,7 @@ spring:
 spring:
   config:
     activate:
-      on-profile:
+      on-profile: prod
 
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}?sslmode=require
@@ -64,18 +64,15 @@ spring:
       password: ${REDIS_PASSWORD}
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${EMAIL_USERNAME}
-    password: ${EMAIL_PASSWORD}
+    host: mailhog
+    port: 1025
+    protocol: smtp
     properties:
       mail:
         smtp:
-          auth: true
+          auth: false
           starttls:
-            enable: true
-          ssl:
-            enable: true
+            enable: false
 
   springdoc:
     swagger-ui:
@@ -85,7 +82,7 @@ spring:
       enabled: false
 
 app:
-  frontend-url: https://tudominio.com
+  base-url: https://tudominio.com
   security:
     jwt:
       secret: 51f1ebd91950319c7c05dfff4bfed4e89535eeccc9d8336c45de6150216e0cd97c3cc9041b5fdf3cad8631069dccc2fd7800e623446ffc78ab85184580cb9f9b2eed98a27c429fbc5974b16cef1a7a3a820f49568994039b4b1e5c1b28a5841023e7344583feae70f520a13789244edf769cf025bf16ea5d93d199b3b00d15fa87df8fa1be3514a3d0cbd4d67edb482597a1882e8c2fc7b62534853530e500b7b451c5fd2616d3c2778af628e2ce14210c4719649116abec8392564c653983e6580c148e7172ca1a61ff96efb58c0b254a237a0b07081b5762d75ac2a657489e1c9147dff1d7f7fd0afae53131b6c4bb1dcf75fec4e11af3ad237b95128b8f55
@@ -95,6 +92,12 @@ app:
     stripe:
       api-key: ${STRIPE_API_KEY}
       webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  cloud:
+    cloudinary:
+      cloud-name: ${CLOUD_NAME}
+      api-key: ${CLOUDINARY_API_KEY}
+      api-secret: ${CLOUDINARY_SECRET_KEY}
+
 
 logging:
   level:

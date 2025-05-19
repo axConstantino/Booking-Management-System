@@ -46,17 +46,17 @@ public class AuthService {
      */
     @Transactional
     public TokenResponse register(final RegisterRequest registerRequest) {
-        log.info("Attempting to register user with email: {}", registerRequest.getEmail());
+        log.info("Attempting to register user with email: {}", registerRequest.email());
 
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            log.warn("Registration failed: Email already exists: {}", registerRequest.getEmail());
+        if (userRepository.existsByEmail(registerRequest.email())) {
+            log.warn("Registration failed: Email already exists: {}", registerRequest.email());
             throw new DuplicateEntityException("Email already exists");
         }
 
         final User user = User.builder()
-                .name(registerRequest.getName())
-                .email(registerRequest.getEmail())
-                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .name(registerRequest.name())
+                .email(registerRequest.email())
+                .password(passwordEncoder.encode(registerRequest.password()))
                 .roles(Set.of(Role.USER))
                 .build();
 

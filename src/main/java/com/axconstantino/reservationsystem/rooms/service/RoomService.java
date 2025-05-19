@@ -4,7 +4,6 @@ import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.common.utils.BaseCRUDService;
 import com.axconstantino.reservationsystem.rooms.database.model.Room;
 import com.axconstantino.reservationsystem.rooms.database.model.RoomImage;
-import com.axconstantino.reservationsystem.rooms.database.repository.RoomImageRepository;
 import com.axconstantino.reservationsystem.rooms.database.repository.RoomRepository;
 import com.axconstantino.reservationsystem.rooms.dto.RoomDTO;
 import com.axconstantino.reservationsystem.rooms.dto.RoomFilterRequest;
@@ -48,7 +47,7 @@ public class RoomService extends BaseCRUDService<Room, RoomDTO, Long, RoomReposi
      * @param repository the RoomRepository to access room data
      * @param mapper     the RoomMapper for converting between entities and DTOs
      */
-    public RoomService(RoomRepository repository, RoomMapper mapper, Cloudinary cloudinary, RoomImageRepository imageRepo) {
+    public RoomService(RoomRepository repository, RoomMapper mapper, Cloudinary cloudinary) {
         super(repository, mapper);
         this.cloudinary = cloudinary;
     }

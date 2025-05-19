@@ -19,7 +19,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -273,7 +274,7 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
      * @param endDate    the end date of the booking
      * @throws ConflictException if there is a date conflict with existing bookings
      */
-    private void checkRoomAvailability(Room room, LocalDateTime startDate, LocalDateTime endDate) {
+    private void checkRoomAvailability(Room room, LocalDate startDate, LocalDate endDate) {
         log.debug("Checking availability for room {} from {} to {}", room.getId(), startDate, endDate);
         boolean isAvailable = bookingRepository.findByRoomAndDatesOverlap(room, startDate, endDate).isEmpty();
         if (!isAvailable) {
@@ -283,18 +284,28 @@ public class BookingService extends BaseCRUDService<Booking, BookingResponse, UU
     }
 
     /**
-     * Calculates the total price for a booking based on room price and duration.
-     *
-     * @param room      the booked room
-     * @param startDate the start date of the booking
-     * @param endDate   the end date of the booking
-     * @return the total price as a {@link BigDecimal}
+     * Calculates the total price for a booking based on the room's nightly rate and the number of nights
+     * between the start and end dates.
+     * <p>
+     * The booking must be at least one night. If the {@code endDate} is not after {@code startDate},
+     * an {@link IllegalArgumentException} is thrown.
+     *</p>
+     * @param room      the room being booked; must not be {@code null}
+     * @param startDate the check-in date (inclusive); must not be {@code null}
+     * @param endDate   the check-out date (exclusive); must be after {@code startDate} and not {@code null}
+     * @return the total booking price as a {@link BigDecimal}
+     * @throws IllegalArgumentException if {@code endDate} is not after {@code startDate}
      */
-    private BigDecimal calculateTotalPrice(Room room, LocalDateTime startDate, LocalDateTime endDate) {
-        long hours = Duration.between(startDate, endDate).toHours();
-        long nights = (hours + 23) / 24;
+    public BigDecimal calculateTotalPrice(Room room, LocalDate startDate, LocalDate endDate) {
+        long nights = ChronoUnit.DAYS.between(startDate, endDate);
+
+        if (nights <= 0) {
+            throw new IllegalArgumentException("The departure date must be after the arrival date.");
+        }
+
         BigDecimal totalPrice = room.getPricePerNight().multiply(BigDecimal.valueOf(nights));
         log.debug("Calculated total price {} for room {} for {} nights", totalPrice, room.getId(), nights);
         return totalPrice;
     }
+
 }
