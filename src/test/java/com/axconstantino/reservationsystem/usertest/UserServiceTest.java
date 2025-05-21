@@ -73,7 +73,7 @@ class UserServiceTest {
     @Test
     void updateUserBasicInfo_ShouldFormatMexicanPhoneAndUpdate() {
         UserDTO dto = new UserDTO();
-        dto.setName("Nuevo Nombre");
+        dto.setName("New Name");
         dto.setPhone("55 1234 5678");
 
         given(repository.findByEmail(email)).willReturn(Optional.of(user));

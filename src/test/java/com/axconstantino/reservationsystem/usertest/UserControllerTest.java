@@ -81,7 +81,7 @@ class UserControllerTest {
     @Test
     void getCurrentUser_ShouldReturn200WithDto() throws Exception {
         User user = User.builder().email(email).build();
-        UserDTO dto = new UserDTO(); dto.setEmail(email);
+        UserDTO dto = new UserDTO();
         given(userService.getUserByEmail(email)).willReturn(user);
         given(userMapper.toDto(user)).willReturn(dto);
 
