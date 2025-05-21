@@ -39,7 +39,7 @@ spring:
           timeout: 5000
           writetimeout: 5000
           ssl:
-            trust: smtp.gmail.com
+            trust: ""
 
 ---
 spring:
@@ -48,24 +48,24 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}?sslmode=require
-    username: ${DB_USERNAME}
+    url: ${DB_URL}
+    username: ${DB_USER}
     password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
 
   data:
     redis:
       host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
 
   mail:
-    host: mailhog
-    port: 1025
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
     protocol: smtp
     properties:
       mail:
@@ -73,6 +73,8 @@ spring:
           auth: false
           starttls:
             enable: false
+          ssl:
+            trust: ""
 
   springdoc:
     swagger-ui:
@@ -82,19 +84,21 @@ spring:
       enabled: false
 
 app:
-  base-url: https://tudominio.com
+  base-url: ${BASE_URL}
   security:
     jwt:
-      secret: 51f1ebd91950319c7c05dfff4bfed4e89535eeccc9d8336c45de6150216e0cd97c3cc9041b5fdf3cad8631069dccc2fd7800e623446ffc78ab85184580cb9f9b2eed98a27c429fbc5974b16cef1a7a3a820f49568994039b4b1e5c1b28a5841023e7344583feae70f520a13789244edf769cf025bf16ea5d93d199b3b00d15fa87df8fa1be3514a3d0cbd4d67edb482597a1882e8c2fc7b62534853530e500b7b451c5fd2616d3c2778af628e2ce14210c4719649116abec8392564c653983e6580c148e7172ca1a61ff96efb58c0b254a237a0b07081b5762d75ac2a657489e1c9147dff1d7f7fd0afae53131b6c4bb1dcf75fec4e11af3ad237b95128b8f55
-      access-expiration: 86400
-      refresh-expiration: 604800
+      secret: ${JWT_SECRET}
+      access-expiration: ${JWT_ACCESS_EXPIRATION}
+      refresh-expiration: ${JWT_REFRESH_EXPIRATION}
+    token:
+      password-reset: ${PASSWORD_RESET_TOKEN}
   payments:
     stripe:
       api-key: ${STRIPE_API_KEY}
       webhook-secret: ${STRIPE_WEBHOOK_SECRET}
   cloud:
     cloudinary:
-      cloud-name: ${CLOUD_NAME}
+      cloud-name: ${CLOUDINARY_CLOUD_NAME}
       api-key: ${CLOUDINARY_API_KEY}
       api-secret: ${CLOUDINARY_SECRET_KEY}
 
@@ -102,11 +106,14 @@ app:
 logging:
   level:
     root: warn
-    org.springframework: warn
-    com.axconstantino.reservationsystem: info
+    org.springframework: info
+    org.springframework.web: debug
+    org.hibernate.SQL: debug
+    com.axconstantino.reservationsystem: debug
   file:
     name: /var/log/app/booking-app.log
   pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 management:

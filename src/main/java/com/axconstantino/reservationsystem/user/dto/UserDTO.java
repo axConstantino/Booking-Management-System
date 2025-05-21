@@ -12,9 +12,6 @@ public class UserDTO {
     @Size(min = 3, max = 50, message = ValidationMessages.USER_NAME_LENGTH)
     private String name;
 
-    @Email(message = ValidationMessages.USER_EMAIL_INVALID)
-    private String email;
-
     @ValidPhone(message = ValidationMessages.USER_PHONE_INVALID)
     private String phone;
 }

@@ -3,6 +3,7 @@ package com.axconstantino.reservationsystem.auth.service;
 import com.axconstantino.reservationsystem.auth.dto.AuthRequest;
 import com.axconstantino.reservationsystem.auth.dto.RegisterRequest;
 import com.axconstantino.reservationsystem.auth.dto.TokenResponse;
+import com.axconstantino.reservationsystem.common.exception.ConflictException;
 import com.axconstantino.reservationsystem.common.exception.DuplicateEntityException;
 import com.axconstantino.reservationsystem.common.exception.NotFoundException;
 import com.axconstantino.reservationsystem.mail.EmailService;
@@ -53,6 +54,10 @@ public class AuthService {
             throw new DuplicateEntityException("Email already exists");
         }
 
+        if (!isValidPassword(registerRequest.password())) {
+            throw new ConflictException("Password does not meet complexity requirements");
+        }
+
         final User user = User.builder()
                 .name(registerRequest.name())
                 .email(registerRequest.email())
@@ -61,14 +66,12 @@ public class AuthService {
                 .build();
 
         final User savedUser = userRepository.save(user);
-        log.info("User successfully registered: {}", savedUser.getEmail());
 
         final String jwtToken = jwtService.generateToken(savedUser);
         final String refreshToken = jwtService.generateRefreshToken(savedUser);
         saveRefreshToken(user.getId(), refreshToken);
 
         emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getName());
-        log.info("Welcome email sent to: {}", savedUser.getEmail());
 
         return new TokenResponse(jwtToken, refreshToken);
     }
@@ -238,6 +241,11 @@ public class AuthService {
         saveRefreshToken(user.getId(), newRefreshToken);
 
         return new TokenResponse(newAccessToken, newRefreshToken);
+    }
+
+    private boolean isValidPassword(String password) {
+        String pattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$";
+        return password.matches(pattern);
     }
 
 }

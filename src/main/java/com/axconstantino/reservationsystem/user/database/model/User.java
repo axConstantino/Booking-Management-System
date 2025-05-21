@@ -11,8 +11,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -68,10 +66,25 @@ public class User {
     )
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
     @NotEmpty(message = ValidationMessages.USER_ROLES_EMPTY)
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    @Builder.Default
+    @Column(name = "enabled", nullable = false)
+    private boolean enabled = true;
+
+    @Builder.Default
+    @Column(name = "account_locked", nullable = false)
+    private boolean accountLocked = false;
+
+    @Builder.Default
+    @Column(name = "credentials_expired", nullable = false)
+    private boolean credentialsExpired = false;
+
+    @Builder.Default
+    @Column(name = "account_expired", nullable = false)
+    private boolean accountExpired = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -81,8 +94,24 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "security_updated_at")
+    private LocalDateTime securityUpdatedAt;
+    
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 
+
+    @PrePersist
+    protected void onCreation() {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (this.updatedAt == null) {
+            this.updatedAt = now;
+        }
+
+        if (this.securityUpdatedAt == null) {
+            this.securityUpdatedAt = now;
+        }
+    }
 }

@@ -5,17 +5,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env.test
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - DB_URL=jdbc:postgresql://db:5432/reservation_system
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - REDIS_HOST=redis
-      - JWT_SECRET=your_jwt_secret
-      - STRIPE_API_KEY=your_stripe_key
-      - MAIL_HOST=mailhog
-      - MAIL_PORT=1025
+      - .env
     depends_on:
       db:
         condition: service_healthy
@@ -23,7 +13,8 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
-
+    networks:
+      - red-app
   db:
     restart: unless-stopped
     image: postgres:16
@@ -34,17 +25,25 @@ services:
       retries: 5
     environment:
       POSTGRES_DB: reservation_system
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command:
+      - "-c"
+      - "listen_addresses=*"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - red-app
 
   redis:
     restart: unless-stopped
     image: redis:7.2-alpine
+    command: redis-server --requirepass redis
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "redis", "ping"]
       interval: 5s
       timeout: 30s
       retries: 3
@@ -52,14 +51,27 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - red-app
 
   mailhog:
     image: mailhog/mailhog
     container_name: mailhog
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1025 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       - "1025:1025"
       - "8025:8025"
     restart: unless-stopped
+    networks:
+    - red-app
+
+networks:
+  red-app:
+    driver: bridge
 
 volumes:
   postgres_data:
