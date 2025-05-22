@@ -31,8 +31,9 @@ API RESTful para un sistema de gestión de reservas, construido con Java y Sprin
     * Uso de Testcontainers para pruebas de integración con PostgreSQL y Redis, asegurando un entorno de pruebas fiable.
 
 ## 🚧 Próximas Características (Roadmap)
-    * Notificaciones por correo electrónico (configurado con MailHog para desarrollo).
-
+- [ ] Sistema completo de reservas para usuarios
+- [ ] Integración con Stripe para pagos
+- [ ] Notificaciones por email automatizadas
 ---
 
 ## 🛠️ Tecnologías Utilizadas
@@ -128,7 +129,6 @@ CLOUDINARY_SECRET_KEY=
 MAIL_HOST=
 MAIL_PORT=                          # e.g. 587 (for TLS), 465 (for SSL)
 
-CLOUDINARY_API_SECRET=TU_API_SECRET
 ```
 
 ### 3. Ejecutar con Docker Compose
