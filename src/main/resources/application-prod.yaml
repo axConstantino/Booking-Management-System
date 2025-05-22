@@ -78,10 +78,10 @@ spring:
 
   springdoc:
     swagger-ui:
-      enabled: false
+      enabled: true
       disable-swagger-default-url: true
     api-docs:
-      enabled: false
+      enabled: true
 
 app:
   base-url: ${BASE_URL}
