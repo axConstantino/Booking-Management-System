@@ -177,4 +177,6 @@ Accede a la documentación interactiva en Swagger UI:
 
 **Axel Constantino Olvera**  
 📧 [olveraconstantinoaxel@gmail.com](mailto:olveraconstantinoaxel@gmail.com)  
-🐙 [GitHub](https://github.com/axConstantino)
+🐙 [GitHub](https://github.com/axConstantino)  
+💼 [LinkedIn](www.linkedin.com/in/axel-constantino-olvera-947a38368)
+
